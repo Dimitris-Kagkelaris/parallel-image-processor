@@ -9,6 +9,7 @@
 #include "util.h"
 #include <sys/prctl.h>
 #include <signal.h>
+#define STRIDE 3
 
 
 int main(int argc, char* argv[]){
@@ -16,44 +17,64 @@ int main(int argc, char* argv[]){
     int pipe_in = atoi(argv[2]);
     int pipe_out = atoi(argv[1]);
     const int packet_size = atoi(argv[3]);
-    char char_to_search = argv[4][0];
-    int read_file = atoi(argv[5]);
+    int input_file = atoi(argv[4]);
+    int output_file = atoi(argv[5]);
+    
+    struct image_specs specs;
+    receive_array_from_pipe(pipe_out, &specs, sizeof(specs));
+    
     pid_t my_pid = getpid();
-    int count;
     
     while(1){
         //read job from pipe
-        int job_id, byte_offset;
-        int bytes_read = receive_from_pipe(pipe_out, &job_id);
-        if (bytes_read == 0) {
+        int job_id;
+        if (receive_from_pipe(pipe_out, &job_id) == 0) {
             // EOF, dispatcher has closed the pipe
             fprintf(stderr, "[Worker (%d)]: No more jobs. Exiting.\n", my_pid);
             exit(0);
         }
-        byte_offset = job_id*packet_size;
-        int work_size = packet_size;
-        fprintf(stderr, "[Worker (%d)]: I will search starting from %d byte offset in the read file.\n", my_pid, byte_offset);
-        count = 0;
+        int read_byte_offset = specs.header_size + job_id * packet_size * STRIDE;
+        int read_size = packet_size * STRIDE;
+        fprintf(stderr, "[Worker (%d)]: I will search editing from %d byte offset in the input file.\n", my_pid, read_byte_offset);
 
         // read from file
-        char buff[1024];
-        ssize_t rcnt = 1;
-        while(rcnt > 0){// read until EOF
-            rcnt = pread(read_file, buff, min(work_size, sizeof(buff)), byte_offset);
-            if (rcnt == -1){ // error
+        unsigned char buff[1024];
+        ssize_t bytes_read = 1;
+        while(bytes_read > 0){// read until EOF
+            bytes_read = pread(input_file, buff, min(read_size, sizeof(buff)), read_byte_offset);
+            if (bytes_read == -1){ // error
                 perror("read");
                 exit(1);
             }
 
-            for(ssize_t i = 0; i < rcnt; ++i){
-                if(buff[i] == char_to_search) 
-                    ++count;
-                usleep(30000);
+            ssize_t i;
+            for(i = 0; i + STRIDE - 1 < bytes_read && i < 1021; i += STRIDE){
+                unsigned char r = buff[i];
+                unsigned char g = buff[i + 1];
+                unsigned char b = buff[i + 2];
+                unsigned char gray = (unsigned char)(0.299 * r + 0.587 * g + 0.114 * b);
+                buff[i/STRIDE] = gray;
+                // usleep(30000);
             }
-            work_size -= rcnt;
-            byte_offset += rcnt;
+            
+            int write_byte_offset = (read_byte_offset - specs.header_size) / STRIDE + specs.header_size;
+            ssize_t write_size = i/STRIDE;
+            ssize_t total_bytes_written = 0;
+            while(total_bytes_written < write_size){
+                ssize_t bytes_written = pwrite(output_file, buff + total_bytes_written, 
+                    min(write_size - total_bytes_written, sizeof(buff)), write_byte_offset);
+                if (bytes_written == -1){
+                    perror("write");
+                    exit(1);
+                }
+                total_bytes_written += bytes_written;
+                write_byte_offset += bytes_written;
+            }
+            
+            read_size -= i;
+            read_byte_offset += i;
         }
-        fprintf(stderr, "[Worker (%d)]: I'm done.\n", my_pid);
-        send_over_pipe(pipe_in, count);
+        fprintf(stderr, "[Worker (%d)]: I'm done with job %d.\n", my_pid, job_id);
+        send_over_pipe(pipe_in, 0);
     }
 }

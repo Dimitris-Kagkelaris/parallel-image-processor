@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <string.h>
@@ -13,13 +12,13 @@
 int workers_count;
 struct worker workers[MAX_WORKERS];
 
-int read_file;
-const int packet_size = 512;
+int input_file;
+int output_file;
+const int packet_size = 512;//////// welll see about that........................................
+struct image_specs specs;
+
 struct stack jobs;
 int jobs_count_done;
-
-char char_to_search;
-int total_char_count;
 
 pid_t dispatcher_pid;
 int dispatcher_in, dispatcher_out;
@@ -60,13 +59,13 @@ void worker_init(int pos){
         char arg1[10];
         char arg2[10];
         char arg3[10];
-        char arg4[2];
+        char arg4[10];
         char arg5[10];
         sprintf(arg1, "%d", worker_out);
         sprintf(arg2, "%d", worker_in);
         sprintf(arg3, "%d", packet_size);
-        sprintf(arg4, "%c", char_to_search);
-        sprintf(arg5, "%d", read_file);
+        sprintf(arg4, "%d", input_file);
+        sprintf(arg5, "%d", output_file);
         char *args[] = {
             "./worker",
             arg1,
@@ -84,6 +83,8 @@ void worker_init(int pos){
     close(worker_in);
     close(worker_out);
     workers[pos].pid = p;
+    // send specs struct over the pipe to the worker
+    send_array_over_pipe(workers[pos].in, &specs, sizeof(specs));
 }
 
 void add_workers(int num){
@@ -120,7 +121,6 @@ void show_process_info(){
 
 void show_progress(){
     send_over_pipe(dispatcher_in, jobs_count_done);
-    send_over_pipe(dispatcher_in, total_char_count);
 }
 
 void signal_handler(int signum){
@@ -135,7 +135,6 @@ int main(int argc, char* argv[]){
     // set up pipe with frontend
     dispatcher_out = atoi(argv[3]);
     dispatcher_in = atoi(argv[4]);
-    char_to_search = argv[2][0];
     
     // set up signal communication with frontend
     struct sigaction sa;
@@ -150,28 +149,39 @@ int main(int argc, char* argv[]){
         exit(1);
     }
     
-    read_file = open(argv[1], O_RDONLY);
-    if (read_file == -1){
+    // read input file
+    if(read_image_header(argv[1], &specs) != 0){
+        fprintf(stderr, "[Dispatcher]: Problem with input image");
+        exit(1);
+    }
+    input_file = open(argv[1], O_RDONLY);
+    if (input_file == -1){
         perror("Problem opening file to read");
         exit(1);
     }
-    
-    struct stat st;
-    if(fstat(read_file, &st) == -1){
-        perror("fstat failed");
-        exit(1);
-    }
-    int file_size = st.st_size;
-    
-    int number_of_jobs = file_size/packet_size + (file_size % packet_size > 0);
+
+    int work_size = specs.width*specs.height;
+    int number_of_jobs = work_size/packet_size + (work_size % packet_size > 0);
     fprintf(stderr, "[Dispatcher]: number of jobs: %d\n", number_of_jobs);
-    
     // tell frontend how many jobs we have
     send_over_pipe(dispatcher_in, number_of_jobs);
     
+
     initalize_stack(&jobs, number_of_jobs+10);
-    for(int i = 0; i < number_of_jobs; ++i)
-    push(&jobs, i);
+    for(int i = 0; i < number_of_jobs; ++i){
+        push(&jobs, i);
+    }
+
+    // initialize output file
+    output_file = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (output_file == -1){
+        perror("Problem opening file to write");
+        exit(1);
+    }
+    ftruncate(output_file, specs.header_size + specs.width * specs.height);
+    char output_header[100];
+    sprintf(output_header, "P5\n%d %d\n%d\n", specs.width, specs.height, specs.maxval);
+    write(output_file, &output_header, strlen(output_header));
 
     while(1){ 
         while(command_arrived){
@@ -184,12 +194,12 @@ int main(int argc, char* argv[]){
                 switch(command_id){
                     case 1:
                         add_workers(amount);
-                        send_over_pipe(dispatcher_in, 10);
+                        send_over_pipe(dispatcher_in, 0);
                         break;
                 
                     case 2:
                         remove_workers(amount);
-                        send_over_pipe(dispatcher_in, 10);
+                        send_over_pipe(dispatcher_in, 0);
                         break;
                 
                     case 3:
@@ -223,7 +233,10 @@ int main(int argc, char* argv[]){
                 worker_init(i);
             }
             else if(bytes_read > 0){
-                total_char_count += result;
+                if(result != 0){
+                    fprintf(stderr, "[Dispatcher]: Worker %d encountered an error while processing job %d\n", i, workers[i].current_job);
+                    exit(1);
+                }
                 ++jobs_count_done;
                 workers[i].busy = 0;
                 ++workers[i].jobs_completed;
@@ -246,6 +259,6 @@ int main(int argc, char* argv[]){
                 }
             }
         }
-        sleep(1);
+        // sleep(1);
     }
 }

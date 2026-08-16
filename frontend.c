@@ -12,7 +12,7 @@ struct worker workers[MAX_WORKERS];
 int main(int argc, char* argv[]){
     
     if(argc != 3){
-        printf("Usage: %s <filename> <character>\n", argv[0]);
+        printf("Usage: %s <input> <output>\n", argv[0]);
         exit(1);
     }
     
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]){
             case 1:{
                 int message = -1;
                 receive_from_pipe(frontend_out, &message);
-                if(message != 10){
+                if(message != 0){
                     printf("Error encountered during adding workers\n");
                     exit(1);
                 }
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]){
             case 2:{
                 int message = -1;
                 receive_from_pipe(frontend_out, &message);
-                if(message != 10){
+                if(message != 0){
                     printf("Error encountered during removing workers\n");
                     exit(1);
                 }
@@ -172,14 +172,13 @@ int main(int argc, char* argv[]){
             }
             case 4:{
                 if(total_number_of_jobs == 0){
-                    printf("Progress: 100%%, characters found: 0 (file is empty)\n");
+                    printf("Progress: 100%%, image is empty.\n");
                     break;
                 }
-                int jobs_count_done, total_char_count;
+                int jobs_count_done;
                 receive_from_pipe(frontend_out, &jobs_count_done);
-                receive_from_pipe(frontend_out, &total_char_count);
-                printf("Progress: %.2f%%, characters found: %d\n",
-                    (float) jobs_count_done/total_number_of_jobs * 100, total_char_count);
+                printf("Progress: %.2f%%\n",
+                    (float) jobs_count_done/total_number_of_jobs * 100);
                 break;
             }
             case 5:{
