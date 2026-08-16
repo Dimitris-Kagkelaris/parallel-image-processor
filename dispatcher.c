@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <string.h>
@@ -16,6 +15,8 @@ struct worker workers[MAX_WORKERS];
 int input_file;
 int output_file;
 const int packet_size = 512;//////// welll see about that........................................
+struct image_specs specs;
+
 struct stack jobs;
 int jobs_count_done;
 
@@ -58,7 +59,7 @@ void worker_init(int pos){
         char arg1[10];
         char arg2[10];
         char arg3[10];
-        char arg4[2];
+        char arg4[10];
         char arg5[10];
         sprintf(arg1, "%d", worker_out);
         sprintf(arg2, "%d", worker_in);
@@ -82,6 +83,8 @@ void worker_init(int pos){
     close(worker_in);
     close(worker_out);
     workers[pos].pid = p;
+    // send specs struct over the pipe to the worker
+    send_array_over_pipe(workers[pos].in, &specs, sizeof(specs));
 }
 
 void add_workers(int num){
@@ -148,7 +151,6 @@ int main(int argc, char* argv[]){
     }
     
     // read input file
-    struct image_specs specs;//maybe global!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     if(read_image_header(argv[1], &specs) != 0){
         fprintf(stderr, "[Dispatcher]: Problem with input image");
         exit(1);
