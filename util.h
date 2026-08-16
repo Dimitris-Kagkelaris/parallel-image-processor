@@ -13,6 +13,13 @@ struct worker{
     bool busy; // 0 means available 1 means busy
 };
 
+struct image_specs {
+    int width;
+    int height;
+    int maxval; // maximum color value (should be 255)
+    long long header_size;  // byte offset where pixel data starts
+};
+
 int min(int x, int y);
 int max(int x, int y);
 

@@ -4,6 +4,7 @@
 #include <errno.h>
 #include "util.h"
 
+// helper functions
 int max(int x, int y) {
     return x < y ? y : x;
 }
@@ -12,6 +13,7 @@ int min(int x, int y) {
     return x > y ? y : x;
 }
 
+// stack functions
 void initalize_stack(struct stack *s, int size){
     s->a = (int *) malloc(size * sizeof(int));
     s->size = size;
@@ -57,6 +59,7 @@ void pop(struct stack *s){
     --s->top;
 }
 
+// pipe helper functions
 void create_pipe(int fd[2]){
     if (pipe(fd) == -1) {
         perror("pipe");
@@ -135,8 +138,58 @@ void receive_array_from_pipe(int fd, void *data, size_t size) {
     }
 }
 
-
+// string helper functions
 void flush_input_buffer(void){
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
+}
+
+// image helper functions
+
+// reads a P6 PPM header
+int read_image_header(const char* image_name, struct image_specs *specs){
+    FILE *input = fopen(image_name, "r");
+    if (!input){
+        perror("fopen input"); 
+        return 1;
+    }
+
+
+    // read 2 char magic number
+    char magic[3];
+    if (fscanf(f, "%2s", magic) != 1 || magic[0] != 'P' || magic[1] != '6') {
+        fprintf(stderr, "[Dispatcher]: Not a P6 PPM file\n");
+        fclose(input);
+        return 1;
+    }
+
+    // skip whitespace/comments before width
+    char c;
+    while ((c = fgetc(f)) != EOF) {
+        if (c == '#') {
+            while ((c = fgetc(f)) != EOF && c != '\n');
+        }
+        else if (c != ' ' && c != '\t' && c != '\n' && c != '\r'){
+            unget(c, f);
+            break;
+        }
+    }
+
+    // read the specs and skip one char to get to the binary data
+    if (fscanf(f, "%d %d %d", &specs->width, &specs->height, &specs->maxval) != 3) {
+        fprintf(stderr, "[Dispatcher]: Malformed PPM header\n");
+        fclose(input);
+        return 1;
+    }
+    fgetc(f);
+    
+    specs->header_size = ftell(f);
+    if (specs->maxval != 255) {
+        fprintf(stderr, "Only 8-bit (maxval 255) PPMs are supported\n");
+        fclose(input);
+        return 1;
+    }
+
+    fclose(input);
+    return 0;
 }
