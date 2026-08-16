@@ -1,7 +1,10 @@
 confirmation*
 logs.txt
+frontend
+dispatcher
+worker
 *.o
 big_text
 rd
 count_fds.sh
-
+grayscale.c
