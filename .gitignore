@@ -1,0 +1,7 @@
+confirmation*
+logs.txt
+*.o
+big_text
+rd
+count_fds.sh
+
