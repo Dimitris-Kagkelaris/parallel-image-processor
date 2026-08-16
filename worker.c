@@ -66,6 +66,7 @@ int main(int argc, char* argv[]){
                     perror("write");
                     exit(1);
                 }
+                write_size -= bytes_written;
                 write_byte_offset += bytes_written;
             }
 
