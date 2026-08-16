@@ -8,3 +8,8 @@ big_text
 rd
 count_fds.sh
 grayscale.c
+grayscale
+input.jpg
+output.png
+stb_image.h
+stb_image_write.h
