@@ -9,7 +9,8 @@ rd
 count_fds.sh
 grayscale.c
 grayscale
+input.ppm
 input.jpg
-output.png
+output.ppm
 stb_image.h
 stb_image_write.h
