@@ -135,7 +135,6 @@ int main(int argc, char* argv[]){
     // set up pipe with frontend
     dispatcher_out = atoi(argv[3]);
     dispatcher_in = atoi(argv[4]);
-    char_to_search = argv[2][0];
     
     // set up signal communication with frontend
     struct sigaction sa;
@@ -260,6 +259,6 @@ int main(int argc, char* argv[]){
                 }
             }
         }
-        sleep(1);
+        // sleep(1);
     }
 }

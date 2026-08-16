@@ -157,33 +157,33 @@ int read_image_header(const char* image_name, struct image_specs *specs){
 
     // read 2 char magic number
     char magic[3];
-    if (fscanf(f, "%2s", magic) != 1 || magic[0] != 'P' || magic[1] != '6') {
+    if (fscanf(input, "%2s", magic) != 1 || magic[0] != 'P' || magic[1] != '6') {
         fprintf(stderr, "[Dispatcher]: Not a P6 PPM file\n");
         fclose(input);
         return 1;
     }
 
     // skip whitespace/comments before width
-    char c;
-    while ((c = fgetc(f)) != EOF) {
+    int c;
+    while ((c = fgetc(input)) != EOF) {
         if (c == '#') {
-            while ((c = fgetc(f)) != EOF && c != '\n');
+            while ((c = fgetc(input)) != EOF && c != '\n');
         }
         else if (c != ' ' && c != '\t' && c != '\n' && c != '\r'){
-            unget(c, f);
+            ungetc(c, input);
             break;
         }
     }
 
     // read the specs and skip one char to get to the binary data
-    if (fscanf(f, "%d %d %d", &specs->width, &specs->height, &specs->maxval) != 3) {
+    if (fscanf(input, "%d %d %d", &specs->width, &specs->height, &specs->maxval) != 3) {
         fprintf(stderr, "[Dispatcher]: Malformed PPM header\n");
         fclose(input);
         return 1;
     }
-    fgetc(f);
+    fgetc(input);
     
-    specs->header_size = ftell(f);
+    specs->header_size = ftell(input);
     if (specs->maxval != 255) {
         fprintf(stderr, "Only 8-bit (maxval 255) PPMs are supported\n");
         fclose(input);

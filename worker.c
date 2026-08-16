@@ -48,30 +48,31 @@ int main(int argc, char* argv[]){
             }
 
             ssize_t i;
-            for(i = 0; i + STRIDE - 1 < bytes_read; i += STRIDE){
-                unsigned char r = buf[i];
-                unsigned char g = buf[i + 1];
-                unsigned char b = buf[i + 2];
+            for(i = 0; i + STRIDE - 1 < bytes_read && i < 1021; i += STRIDE){
+                unsigned char r = buff[i];
+                unsigned char g = buff[i + 1];
+                unsigned char b = buff[i + 2];
                 unsigned char gray = (unsigned char)(0.299 * r + 0.587 * g + 0.114 * b);
-                buf[i/STRIDE] = gray;
-                usleep(30000);
+                buff[i/STRIDE] = gray;
+                // usleep(30000);
             }
-
-            int write_byte_offset = read_byte_offset/STRIDE;
-            ssize_t write_size = bytes_read/STRIDE;
-            ssize_t bytes_written = 1
-            while(bytes_written > 0){
-                bytes_written = pwrite(output_file, buff, min(write_size, sizeof(buff)), write_byte_offset);
-                if (bytes_written == -1){ // error
+            
+            int write_byte_offset = (read_byte_offset - specs.header_size) / STRIDE + specs.header_size;
+            ssize_t write_size = i/STRIDE;
+            ssize_t total_bytes_written = 0;
+            while(total_bytes_written < write_size){
+                ssize_t bytes_written = pwrite(output_file, buff + total_bytes_written, 
+                    min(write_size - total_bytes_written, sizeof(buff)), write_byte_offset);
+                if (bytes_written == -1){
                     perror("write");
                     exit(1);
                 }
-                write_size -= bytes_written;
+                total_bytes_written += bytes_written;
                 write_byte_offset += bytes_written;
             }
-
-            read_size -= bytes_read - i;
-            read_byte_offset += bytes_read - i;
+            
+            read_size -= i;
+            read_byte_offset += i;
         }
         fprintf(stderr, "[Worker (%d)]: I'm done with job %d.\n", my_pid, job_id);
         send_over_pipe(pipe_in, 0);

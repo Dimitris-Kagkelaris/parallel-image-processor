@@ -43,4 +43,5 @@ void push(struct stack *s, int elem);
 void pop(struct stack *s);
 
 void flush_input_buffer(void);
+int read_image_header(const char* image_name, struct image_specs *specs);
 #endif
