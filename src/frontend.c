@@ -5,6 +5,7 @@
 #include <sys/prctl.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <libgen.h>
 #include "util.h"
 
 struct worker workers[MAX_WORKERS];
@@ -47,20 +48,23 @@ int main(int argc, char* argv[]){
         close(frontend_in);
         close(frontend_out);
 
+        char arg0[100];
+        char *dir = dirname(argv[0]);
+        sprintf(arg0, "%s/dispatcher", dir);
         char arg1[10];
         char arg2[10];
         sprintf(arg1, "%d", dispatcher_out);
         sprintf(arg2, "%d", dispatcher_in);
         char *args[] = {
-            "./dispatcher",
+            arg0,
             argv[1],
             argv[2],
             arg1,
             arg2,
             NULL
         };
-        execv("./dispatcher", args);
-        perror("execv");
+        execv(arg0, args);
+        perror("execv for dispatcher");
         exit(1);
     }
     // frontend closes dispatcher ends

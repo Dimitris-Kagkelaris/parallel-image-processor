@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/prctl.h>
 #include <signal.h>
+#include <libgen.h>
 #include "util.h"
 
 int workers_count;
@@ -22,6 +23,7 @@ struct stack jobs;
 int jobs_count_done;
 
 pid_t dispatcher_pid;
+char *dispatcher_dirname;
 int dispatcher_in, dispatcher_out;
 volatile sig_atomic_t command_arrived = 0; // flag to indicate that a command has arrived from frontend
 
@@ -57,6 +59,8 @@ void worker_init(int pos){
             exit(1);
         }
         
+        char arg0[100];
+        sprintf(arg0, "%s/worker", dispatcher_dirname);
         char arg1[10];
         char arg2[10];
         char arg3[10];
@@ -68,7 +72,7 @@ void worker_init(int pos){
         sprintf(arg4, "%d", input_file);
         sprintf(arg5, "%d", output_file);
         char *args[] = {
-            "./worker",
+            arg0,
             arg1,
             arg2,
             arg3,
@@ -76,8 +80,8 @@ void worker_init(int pos){
             arg5,
             NULL
         };
-        execv("./worker", args);
-        perror("execv");
+        execv(arg0, args);
+        perror("execv for worker");
         exit(1);
     }
     // dispatcher closes worker ends
@@ -134,6 +138,8 @@ int main(int argc, char* argv[]){
     (void)argc;
     dispatcher_pid = getpid();
     
+    dispatcher_dirname = dirname(argv[0]);
+
     // set up pipe with frontend
     dispatcher_out = atoi(argv[3]);
     dispatcher_in = atoi(argv[4]);

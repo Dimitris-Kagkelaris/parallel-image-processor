@@ -1,4 +1,3 @@
-confirmation*
 logs.txt
 frontend
 dispatcher
@@ -12,7 +11,5 @@ grayscale
 input.ppm
 input.jpg
 output.ppm
-stb_image.h
-stb_image_write.h
 input.ppm
 output.ppm

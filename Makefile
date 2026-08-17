@@ -1,23 +1,39 @@
-all: frontend dispatcher worker
-
 CC = gcc
 CFLAGS = -Wall -Wextra -g -O0
-#CFLAGS = -Wall -O2
-#CFLAGS =  -O2  
 
-frontend: frontend.o util.o
-	$(CC) $(CFLAGS) $^ -o $@
-	
-dispatcher: dispatcher.o util.o
-	$(CC) $(CFLAGS) $^ -o $@
-	
-worker: worker.o util.o
-	$(CC) $(CFLAGS) $^ -o $@
-	
-%.o: %.c
-	$(CC) $(CFLAGS) -c $<
+SRC_DIR = src
+INC_DIR = include
+OBJ_DIR = obj
+BIN_DIR = bin
+IMG_DIR = images
 
-frontend.o dispatcher.o worker.o util.o: util.h
+CFLAGS += -I$(INC_DIR)
 
-clean: 
-	rm -f *.o frontend dispatcher worker
+TARGETS = frontend dispatcher worker
+BINARIES = $(addprefix $(BIN_DIR)/,$(TARGETS))
+
+all: $(BINARIES)
+
+$(BIN_DIR)/frontend: $(OBJ_DIR)/frontend.o $(OBJ_DIR)/util.o | $(BIN_DIR)
+	$(CC) $(CFLAGS) $^ -o $@
+
+$(BIN_DIR)/dispatcher: $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/util.o | $(BIN_DIR)
+	$(CC) $(CFLAGS) $^ -o $@
+
+$(BIN_DIR)/worker: $(OBJ_DIR)/worker.o $(OBJ_DIR)/util.o | $(BIN_DIR)
+	$(CC) $(CFLAGS) $^ -o $@
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR) $(BIN_DIR):
+	mkdir -p $@
+
+$(OBJ_DIR)/frontend.o $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/worker.o $(OBJ_DIR)/util.o: $(INC_DIR)/util.h
+
+
+run: $(BIN_DIR)/frontend
+	./$(BIN_DIR)/frontend $(IMG_DIR)/input.ppm $(IMG_DIR)/output.ppm
+
+clean:
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
