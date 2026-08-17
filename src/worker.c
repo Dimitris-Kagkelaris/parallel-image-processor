@@ -12,6 +12,11 @@
 #include "util.h"
 #include "pipe_utils.h"
 
+#ifdef DEBUG
+#define LOG(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define LOG(...) ((void)0)
+#endif
 
 int main(int argc, char* argv[]){
     if (argc != 6) {
@@ -30,19 +35,17 @@ int main(int argc, char* argv[]){
     receive_array_from_pipe(pipe_out, &input_specs, sizeof(input_specs));
     receive_array_from_pipe(pipe_out, &output_specs, sizeof(output_specs));
     
-    pid_t my_pid = getpid();
-    
     while(1){
         //read job from pipe
         int job_id;
         if (receive_from_pipe(pipe_out, &job_id) == 0) {
             // EOF, dispatcher has closed the pipe
-            fprintf(stderr, "[Worker (%d)]: No more jobs. Exiting.\n", my_pid);
+            LOG("[Worker (%d)]: No more jobs. Exiting.\n", getpid());
             exit(0);
         }
         off_t read_byte_offset = input_specs.header_size + (off_t)job_id * packet_size * STRIDE;
         ssize_t read_size = packet_size * STRIDE;
-        fprintf(stderr, "[Worker (%d)]: I will search editing from %ld byte offset in the input file.\n", my_pid, read_byte_offset);
+        LOG("[Worker (%d)]: I will search editing from %ld byte offset in the input file.\n", getpid(), read_byte_offset);
 
         // read from file
         unsigned char buff[512 * STRIDE];
@@ -61,7 +64,6 @@ int main(int argc, char* argv[]){
                 unsigned char b = buff[i + 2];
                 unsigned char gray = (unsigned char)(0.299 * r + 0.587 * g + 0.114 * b);
                 buff[i/STRIDE] = gray;
-                // usleep(30000);
             }
             
             off_t write_byte_offset = (read_byte_offset - input_specs.header_size) / STRIDE + output_specs.header_size;
@@ -81,7 +83,7 @@ int main(int argc, char* argv[]){
             read_size -= i;
             read_byte_offset += i;
         }
-        fprintf(stderr, "[Worker (%d)]: I'm done with job %d.\n", my_pid, job_id);
+        LOG("[Worker (%d)]: I'm done with job %d.\n", getpid(), job_id);
         send_over_pipe(pipe_in, 0);
     }
 }

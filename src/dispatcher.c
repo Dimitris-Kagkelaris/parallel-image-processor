@@ -13,6 +13,12 @@
 #include "stack.h"
 #include "pipe_utils.h"
 
+#ifdef DEBUG
+#define LOG(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define LOG(...) ((void)0)
+#endif
+
 int workers_count;
 struct worker workers[MAX_WORKERS];
 
@@ -107,7 +113,7 @@ void remove_workers(int num){
     for(int j = max(0, workers_count - num); j < workers_count; j++){
         if (workers[j].busy) {
             push(&jobs, workers[j].current_job);
-            fprintf(stderr, "[Dispatcher]: Pushed back job %d from worker %d.\n", workers[j].current_job, j);
+            LOG("[Dispatcher]: Pushed back job %d from worker %d.\n", workers[j].current_job, j);
         }
 
         int kill_id = workers[j].pid;
@@ -189,7 +195,7 @@ int main(int argc, char* argv[]){
         exit(1);
     }
     size_t number_of_jobs = work_size/packet_size + (work_size % packet_size > 0);
-    fprintf(stderr, "[Dispatcher]: number of jobs: %ld\n", number_of_jobs);
+    LOG("[Dispatcher]: number of jobs: %ld\n", number_of_jobs);
     // tell frontend how many jobs we have
     send_over_pipe(dispatcher_in, number_of_jobs);
     
@@ -260,7 +266,7 @@ int main(int argc, char* argv[]){
                 fprintf(stderr, "[Dispatcher]: Detected dead worker with pid: %d\n", workers[i].pid);
                 // if the worker was busy when it died, push back the job
                 if (workers[i].busy) {
-                    fprintf(stderr, "[Dispatcher]: Pushed back job %d.\n", workers[i].current_job);
+                    LOG("[Dispatcher]: Pushed back job %d.\n", workers[i].current_job);
                     push(&jobs, workers[i].current_job);
                 }
                 // restart the worker
@@ -274,7 +280,7 @@ int main(int argc, char* argv[]){
                 ++jobs_count_done;
                 workers[i].busy = 0;
                 ++workers[i].jobs_completed;
-                fprintf(stderr, "[Dispatcher]: Collected job %d from worker %d\n", workers[i].current_job, i);
+                LOG("[Dispatcher]: Collected job %d from worker %d\n", workers[i].current_job, i);
             }
 
             if (!workers[i].busy && !is_empty(&jobs)){
@@ -285,7 +291,7 @@ int main(int argc, char* argv[]){
                     perror("Error in waitpid");
                 }
                 if(wait_response == 0){ // if there are available jobs and the child is still alive
-                    fprintf(stderr, "[Dispatcher]: Gave job %d to worker %d.\n", job_id, i);
+                    LOG("[Dispatcher]: Gave job %d to worker %d.\n", job_id, i);
                     pop(&jobs);
                     send_over_pipe(workers[i].in, job_id);
                     workers[i].current_job = job_id;
@@ -293,6 +299,5 @@ int main(int argc, char* argv[]){
                 }
             }
         }
-        // sleep(1);
     }
 }
