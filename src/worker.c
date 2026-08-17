@@ -36,9 +36,9 @@ int main(int argc, char* argv[]){
             fprintf(stderr, "[Worker (%d)]: No more jobs. Exiting.\n", my_pid);
             exit(0);
         }
-        int read_byte_offset = input_specs.header_size + job_id * packet_size * STRIDE;
-        int read_size = packet_size * STRIDE;
-        fprintf(stderr, "[Worker (%d)]: I will search editing from %d byte offset in the input file.\n", my_pid, read_byte_offset);
+        off_t read_byte_offset = input_specs.header_size + (off_t)job_id * packet_size * STRIDE;
+        ssize_t read_size = packet_size * STRIDE;
+        fprintf(stderr, "[Worker (%d)]: I will search editing from %ld byte offset in the input file.\n", my_pid, read_byte_offset);
 
         // read from file
         unsigned char buff[1024];
@@ -60,8 +60,8 @@ int main(int argc, char* argv[]){
                 // usleep(30000);
             }
             
-            int write_byte_offset = (read_byte_offset - input_specs.header_size) / STRIDE + output_specs.header_size;
-            ssize_t write_size = i/STRIDE;
+            off_t write_byte_offset = (read_byte_offset - input_specs.header_size) / STRIDE + output_specs.header_size;
+            ssize_t write_size = i / STRIDE;
             ssize_t total_bytes_written = 0;
             while(total_bytes_written < write_size){
                 ssize_t bytes_written = pwrite(output_file, buff + total_bytes_written, 

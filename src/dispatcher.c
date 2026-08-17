@@ -191,9 +191,10 @@ int main(int argc, char* argv[]){
     char output_header[100];
     sprintf(output_header, "P5\n%d %d\n%d\n", input_specs.width, input_specs.height, input_specs.maxval);
     output_specs = input_specs;
-    output_specs.header_size = strlen(output_header);
-    ftruncate(output_file, output_specs.header_size + output_specs.width * output_specs.height);
-    write(output_file, &output_header, strlen(output_header));
+    output_specs.header_size = (off_t)strlen(output_header);
+    off_t output_file_size = output_specs.header_size + (off_t)output_specs.width * output_specs.height;
+    ftruncate(output_file, output_file_size);
+    write(output_file, output_header, strlen(output_header));
 
     while(1){ 
         while(command_arrived){

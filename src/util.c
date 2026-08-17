@@ -57,7 +57,7 @@ int read_image_header(const char* image_name, struct image_specs *specs){
     }
     fgetc(input);
     
-    specs->header_size = ftell(input);
+    specs->header_size = (off_t)ftell(input);
     if (specs->maxval != 255) {
         fprintf(stderr, "Only 8-bit (maxval 255) PPMs are supported\n");
         fclose(input);

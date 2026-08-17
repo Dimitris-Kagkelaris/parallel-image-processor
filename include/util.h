@@ -3,6 +3,7 @@
 #define MAX_WORKERS 500
 // more workers will exceed the 1024 open file descriptor soft limit per process for the dispatcher and crash
 #include <stdbool.h>
+#include <sys/types.h>
 
 struct worker{
     int pid;
@@ -17,7 +18,7 @@ struct image_specs {
     int width;
     int height;
     int maxval; // maximum color value (should be 255)
-    long long header_size;  // byte offset where pixel data starts
+    off_t header_size;  // byte offset where pixel data starts
 };
 
 int min(int x, int y);
