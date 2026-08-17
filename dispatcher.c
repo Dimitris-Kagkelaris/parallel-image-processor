@@ -15,7 +15,8 @@ struct worker workers[MAX_WORKERS];
 int input_file;
 int output_file;
 const int packet_size = 512;//////// welll see about that........................................
-struct image_specs specs;
+struct image_specs input_specs;
+struct image_specs output_specs;
 
 struct stack jobs;
 int jobs_count_done;
@@ -83,8 +84,9 @@ void worker_init(int pos){
     close(worker_in);
     close(worker_out);
     workers[pos].pid = p;
-    // send specs struct over the pipe to the worker
-    send_array_over_pipe(workers[pos].in, &specs, sizeof(specs));
+    // send both image specs structs over the pipe to the worker
+    send_array_over_pipe(workers[pos].in, &input_specs, sizeof(input_specs));
+    send_array_over_pipe(workers[pos].in, &output_specs, sizeof(output_specs));
 }
 
 void add_workers(int num){
@@ -150,7 +152,7 @@ int main(int argc, char* argv[]){
     }
     
     // read input file
-    if(read_image_header(argv[1], &specs) != 0){
+    if(read_image_header(argv[1], &input_specs) != 0){
         fprintf(stderr, "[Dispatcher]: Problem with input image");
         exit(1);
     }
@@ -160,7 +162,7 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
-    int work_size = specs.width*specs.height;
+    int work_size = input_specs.width*input_specs.height;
     int number_of_jobs = work_size/packet_size + (work_size % packet_size > 0);
     fprintf(stderr, "[Dispatcher]: number of jobs: %d\n", number_of_jobs);
     // tell frontend how many jobs we have
@@ -178,9 +180,11 @@ int main(int argc, char* argv[]){
         perror("Problem opening file to write");
         exit(1);
     }
-    ftruncate(output_file, specs.header_size + specs.width * specs.height);
     char output_header[100];
-    sprintf(output_header, "P5\n%d %d\n%d\n", specs.width, specs.height, specs.maxval);
+    sprintf(output_header, "P5\n%d %d\n%d\n", input_specs.width, input_specs.height, input_specs.maxval);
+    output_specs = input_specs;
+    output_specs.header_size = strlen(output_header);
+    ftruncate(output_file, output_specs.header_size + output_specs.width * output_specs.height);
     write(output_file, &output_header, strlen(output_header));
 
     while(1){ 

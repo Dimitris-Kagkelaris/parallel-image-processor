@@ -20,8 +20,10 @@ int main(int argc, char* argv[]){
     int input_file = atoi(argv[4]);
     int output_file = atoi(argv[5]);
     
-    struct image_specs specs;
-    receive_array_from_pipe(pipe_out, &specs, sizeof(specs));
+    struct image_specs input_specs;
+    struct image_specs output_specs;
+    receive_array_from_pipe(pipe_out, &input_specs, sizeof(input_specs));
+    receive_array_from_pipe(pipe_out, &output_specs, sizeof(output_specs));
     
     pid_t my_pid = getpid();
     
@@ -33,7 +35,7 @@ int main(int argc, char* argv[]){
             fprintf(stderr, "[Worker (%d)]: No more jobs. Exiting.\n", my_pid);
             exit(0);
         }
-        int read_byte_offset = specs.header_size + job_id * packet_size * STRIDE;
+        int read_byte_offset = input_specs.header_size + job_id * packet_size * STRIDE;
         int read_size = packet_size * STRIDE;
         fprintf(stderr, "[Worker (%d)]: I will search editing from %d byte offset in the input file.\n", my_pid, read_byte_offset);
 
@@ -57,7 +59,7 @@ int main(int argc, char* argv[]){
                 // usleep(30000);
             }
             
-            int write_byte_offset = (read_byte_offset - specs.header_size) / STRIDE + specs.header_size;
+            int write_byte_offset = (read_byte_offset - input_specs.header_size) / STRIDE + output_specs.header_size;
             ssize_t write_size = i/STRIDE;
             ssize_t total_bytes_written = 0;
             while(total_bytes_written < write_size){
