@@ -12,6 +12,8 @@ CFLAGS += -I$(INC_DIR)
 TARGETS = frontend dispatcher worker
 BINARIES = $(addprefix $(BIN_DIR)/,$(TARGETS))
 
+.PHONY: all run clean
+
 all: $(BINARIES)
 
 $(BIN_DIR)/frontend: $(OBJ_DIR)/frontend.o $(OBJ_DIR)/util.o | $(BIN_DIR)
@@ -31,9 +33,11 @@ $(OBJ_DIR) $(BIN_DIR):
 
 $(OBJ_DIR)/frontend.o $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/worker.o $(OBJ_DIR)/util.o: $(INC_DIR)/util.h
 
+IN  ?= input.ppm
+OUT ?= output.ppm
 
 run: $(BIN_DIR)/frontend
-	./$(BIN_DIR)/frontend $(IMG_DIR)/input.ppm $(IMG_DIR)/output.ppm
+	./$(BIN_DIR)/frontend $(IMG_DIR)/$(IN) $(IMG_DIR)/$(OUT) 2>logs.txt
 
 clean:
-	rm -rf $(OBJ_DIR) $(BIN_DIR)
+	rm -rf $(OBJ_DIR) $(BIN_DIR) logs.txt
