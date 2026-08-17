@@ -35,10 +35,10 @@ $(OBJ_DIR)/frontend.o $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/worker.o $(OBJ_DIR)/uti
 $(OBJ_DIR)/frontend.o $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/worker.o $(OBJ_DIR)/pipe_utils.o: $(INC_DIR)/pipe_utils.h
 $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/stack.o: $(INC_DIR)/stack.h
 
-IN  ?= input.ppm
+IN  ?= nature.ppm
 OUT ?= output.ppm
 
-run: $(BIN_DIR)/frontend
+run: all
 	./$(BIN_DIR)/frontend $(IMG_DIR)/$(IN) $(IMG_DIR)/$(OUT) 2>logs.txt
 
 clean:

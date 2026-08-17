@@ -5,7 +5,7 @@
 #include "stack.h"
 
 // stack functions
-void initalize_stack(struct stack *s, int size){
+void initialize_stack(struct stack *s, int size){
     s->a = (int *) malloc(size * sizeof(int));
     s->size = size;
     s->top = 0;

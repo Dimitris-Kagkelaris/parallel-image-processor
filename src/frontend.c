@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/prctl.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <libgen.h>
@@ -11,10 +12,39 @@
 
 struct worker workers[MAX_WORKERS];
 
+void exit_handler(int signum){
+    (void)signum;
+
+    int status;
+    wait(&status);
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+        const char msg[] = "\nProgress: 100%\n";
+        write(STDOUT_FILENO, msg, sizeof(msg) - 1);
+        _exit(0);
+    }
+
+    const char msg[] = "\nDispatcher terminated with an error.\n";
+    write(STDERR_FILENO, msg, sizeof(msg) - 1);
+    _exit(1);
+}
+
 int main(int argc, char* argv[]){
     
     if(argc != 3){
         printf("Usage: %s <input> <output>\n", argv[0]);
+        exit(1);
+    }
+
+    // set up signal communication with dispatcher
+    struct sigaction sa;
+    sigset_t sigset;
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGCHLD);
+    sa.sa_handler = exit_handler;
+    sa.sa_flags = 0;
+    sa.sa_mask = sigset;
+    if (sigaction(SIGCHLD, &sa, NULL) < 0) {
+        perror("sigaction (can't pair signal and handler)");
         exit(1);
     }
     
@@ -91,7 +121,13 @@ int main(int argc, char* argv[]){
     while(1){
         code = -1; num = -1;
         printf("> ");
-        if(scanf("%d", &code) != 1 || code < 1 || code > 6){
+        int read = scanf("%d", &code);
+        if(read == EOF){
+            // reached EOF, wait for SIGCHLD
+            while(1){ pause(); }
+        }
+
+        if(read != 1 || code < 1 || code > 6){
             printf("Not a valid command id: %d\n", code);
             flush_input_buffer();
             continue;
@@ -176,10 +212,6 @@ int main(int argc, char* argv[]){
                 break;
             }
             case 4:{
-                if(total_number_of_jobs == 0){
-                    printf("Progress: 100%%, image is empty.\n");
-                    break;
-                }
                 int jobs_count_done;
                 receive_from_pipe(frontend_out, &jobs_count_done);
                 printf("Progress: %.2f%%\n",

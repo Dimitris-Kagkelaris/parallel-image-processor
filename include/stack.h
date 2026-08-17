@@ -8,7 +8,7 @@ struct stack {
     int size;
     int top;
 };
-void initalize_stack(struct stack *s, int size);
+void initialize_stack(struct stack *s, int size);
 void free_stack(struct stack *s);
 int get_size(struct stack *s);
 int get_top(struct stack *s);

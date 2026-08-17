@@ -1,5 +1,6 @@
 #ifndef PIPE_UTILS_H
 #define PIPE_UTILS_H
+#include <stddef.h>
 // pipe helper functions
 void create_pipe(int fd[2]);
 void send_over_pipe(int fd, int data);

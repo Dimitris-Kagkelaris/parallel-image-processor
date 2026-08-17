@@ -14,7 +14,11 @@
 
 
 int main(int argc, char* argv[]){
-    (void)argc;
+    if (argc != 6) {
+        fprintf(stderr, "Usage: %s <pipe_out> <pipe_in> <packet_size> <input_fd> <output_fd>\n", argv[0]);
+        return 1;
+    }
+
     int pipe_in = atoi(argv[2]);
     int pipe_out = atoi(argv[1]);
     const int packet_size = atoi(argv[3]);
@@ -41,7 +45,7 @@ int main(int argc, char* argv[]){
         fprintf(stderr, "[Worker (%d)]: I will search editing from %ld byte offset in the input file.\n", my_pid, read_byte_offset);
 
         // read from file
-        unsigned char buff[1024];
+        unsigned char buff[512 * STRIDE];
         ssize_t bytes_read = 1;
         while(bytes_read > 0){// read until EOF
             bytes_read = pread(input_file, buff, min(read_size, sizeof(buff)), read_byte_offset);
@@ -51,7 +55,7 @@ int main(int argc, char* argv[]){
             }
 
             ssize_t i;
-            for(i = 0; i + STRIDE - 1 < bytes_read && i < 1021; i += STRIDE){
+            for(i = 0; i + STRIDE - 1 < bytes_read; i += STRIDE){
                 unsigned char r = buff[i];
                 unsigned char g = buff[i + 1];
                 unsigned char b = buff[i + 2];
