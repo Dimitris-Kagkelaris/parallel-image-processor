@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <libgen.h>
 #include "util.h"
+#include "pipe_utils.h"
 
 struct worker workers[MAX_WORKERS];
 

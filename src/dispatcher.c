@@ -9,6 +9,8 @@
 #include <signal.h>
 #include <libgen.h>
 #include "util.h"
+#include "stack.h"
+#include "pipe_utils.h"
 
 int workers_count;
 struct worker workers[MAX_WORKERS];
