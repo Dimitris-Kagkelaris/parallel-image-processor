@@ -55,8 +55,13 @@ int read_image_header(const char* image_name, struct image_specs *specs){
         fclose(input);
         return 1;
     }
+    if (specs->width <= 0 || specs->height <= 0){
+        fprintf(stderr, "[Dispatcher]: Invalid image dimensions\n");
+        fclose(input);
+        return 1;
+    }
+
     fgetc(input);
-    
     specs->header_size = (off_t)ftell(input);
     if (specs->maxval != 255) {
         fprintf(stderr, "Only 8-bit (maxval 255) PPMs are supported\n");
