@@ -6,10 +6,11 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <string.h>
-#include "util.h"
 #include <sys/prctl.h>
 #include <signal.h>
 #define STRIDE 3
+#include "util.h"
+#include "pipe_utils.h"
 
 
 int main(int argc, char* argv[]){

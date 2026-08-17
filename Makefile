@@ -16,13 +16,13 @@ BINARIES = $(addprefix $(BIN_DIR)/,$(TARGETS))
 
 all: $(BINARIES)
 
-$(BIN_DIR)/frontend: $(OBJ_DIR)/frontend.o $(OBJ_DIR)/util.o | $(BIN_DIR)
+$(BIN_DIR)/frontend: $(OBJ_DIR)/frontend.o $(OBJ_DIR)/util.o $(OBJ_DIR)/pipe_utils.o | $(BIN_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(BIN_DIR)/dispatcher: $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/util.o | $(BIN_DIR)
+$(BIN_DIR)/dispatcher: $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/util.o $(OBJ_DIR)/pipe_utils.o $(OBJ_DIR)/stack.o| $(BIN_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
 
-$(BIN_DIR)/worker: $(OBJ_DIR)/worker.o $(OBJ_DIR)/util.o | $(BIN_DIR)
+$(BIN_DIR)/worker: $(OBJ_DIR)/worker.o $(OBJ_DIR)/util.o $(OBJ_DIR)/pipe_utils.o | $(BIN_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
@@ -32,6 +32,8 @@ $(OBJ_DIR) $(BIN_DIR):
 	mkdir -p $@
 
 $(OBJ_DIR)/frontend.o $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/worker.o $(OBJ_DIR)/util.o: $(INC_DIR)/util.h
+$(OBJ_DIR)/frontend.o $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/worker.o $(OBJ_DIR)/pipe_utils.o: $(INC_DIR)/pipe_utils.h
+$(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/stack.o: $(INC_DIR)/stack.h
 
 IN  ?= input.ppm
 OUT ?= output.ppm
