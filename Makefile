@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -O2
+CFLAGS = -Wall -Wextra -I$(INC_DIR)
 
 SRC_DIR = src
 INC_DIR = include
@@ -7,20 +7,18 @@ OBJ_DIR = obj
 BIN_DIR = bin
 IMG_DIR = images
 
-CFLAGS += -I$(INC_DIR)
-
 TARGETS = frontend dispatcher worker
 BINARIES = $(addprefix $(BIN_DIR)/,$(TARGETS))
 
-.PHONY: all debug benchmark run clean
+.PHONY: all release debug run clean
 
 all: $(BINARIES)
 
-debug: clean
-	$(MAKE) CFLAGS="$(CFLAGS) -DDEBUG" all
+release: CFLAGS += -O2
+release: all
 
-benchmark: clean
-	$(MAKE) all
+debug: CFLAGS += -g -O0 -DDEBUG
+debug: all
 
 $(BIN_DIR)/frontend: $(OBJ_DIR)/frontend.o $(OBJ_DIR)/util.o $(OBJ_DIR)/pipe_utils.o | $(BIN_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
