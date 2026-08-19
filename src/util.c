@@ -5,12 +5,21 @@
 #include "util.h"
 
 // helper functions
-int max(int x, int y) {
+int max(int x, int y){
     return x < y ? y : x;
 }
 
-int min(int x, int y) {
+int min(int x, int y){
     return x > y ? y : x;
+}
+
+void *safe_malloc(size_t size){
+    void *ptr = malloc(size);
+    if (!ptr) {
+        perror("malloc");
+        exit(1);
+    }
+    return ptr;
 }
 
 // string helper functions

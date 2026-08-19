@@ -10,7 +10,50 @@
 #include "util.h"
 #include "pipe_utils.h"
 
-struct worker workers[MAX_WORKERS];
+int frontend_out;
+
+void print_process_info(pid_t frontend_pid, pid_t dispatcher_pid){
+    printf("Frontend pid:   %d\n", frontend_pid);
+    printf("Dispatcher pid: %d\n", dispatcher_pid);
+    
+    int worker_count;
+    receive_from_pipe(frontend_out, &worker_count);
+    printf("Workers: %d\n", worker_count);
+    if (worker_count == 0) {
+        break;
+    }
+    
+    struct worker* workers = (struct worker*)safe_malloc(MAX_WORKERS * sizeof(struct worker));
+    receive_array_from_pipe(frontend_out, workers, sizeof(workers));
+
+    printf("  %-4s %-8s %-8s %-10s\n", "idx", "job", "pid", "completed");
+    for (int i = 0; i < worker_count; ++i) {
+        printf("  %-4d %-8d %-8d %-10d\n",
+            i+1, workers[i].current_job, workers[i].pid, workers[i].jobs_completed);
+    }
+}
+
+void print_progress(int total_number_of_jobs){
+    int jobs_count_done;
+    receive_from_pipe(frontend_out, &jobs_count_done);
+    printf("Progress: %.2f%%\n",
+        (float) jobs_count_done/total_number_of_jobs * 100);
+}
+
+void print_help(){
+    printf("Commands:\n");
+    printf("[1] Add Workers <number>\n");
+    printf("[2] Remove Workers <number>\n");
+    printf("[3] Show Process Information\n");
+    printf("[4] Show Progress\n");
+    printf("[5] Help\n");
+    printf("[6] Quit\n");
+}
+
+void exit_application(){
+    printf("Quitting...\n");
+    exit(0);
+}
 
 void exit_handler(int signum){
     (void)signum;
@@ -61,7 +104,7 @@ int main(int argc, char* argv[]){
     
     create_pipe(fd);
     int dispatcher_in = fd[1];
-    int frontend_out = fd[0];
+    frontend_out = fd[0];
     
     pid_t p = fork();
     if(p<0){
@@ -110,13 +153,7 @@ int main(int argc, char* argv[]){
 
 
 
-    printf("Commands:\n");
-    printf("[1] Add Workers <number>\n");
-    printf("[2] Remove Workers <number>\n");
-    printf("[3] Show Process Information\n");
-    printf("[4] Show Progress\n");
-    printf("[5] Help\n");
-    printf("[6] Quit\n");
+    print_help();
     int code, num;
     while(1){
         code = -1; num = -1;
@@ -192,45 +229,20 @@ int main(int argc, char* argv[]){
                 break;
             }
             case 3: {
-                printf("Frontend pid:   %d\n", frontend_pid);
-                printf("Dispatcher pid: %d\n", dispatcher_pid);
-
-                int worker_count;
-                receive_from_pipe(frontend_out, &worker_count);
-                printf("Workers: %d\n", worker_count);
-                if (worker_count == 0) {
-                    break;
-                }
-
-                receive_array_from_pipe(frontend_out, workers, sizeof(workers));
-
-                printf("  %-4s %-8s %-8s %-10s\n", "idx", "job", "pid", "completed");
-                for (int i = 0; i < worker_count; ++i) {
-                    printf("  %-4d %-8d %-8d %-10d\n",
-                        i+1, workers[i].current_job, workers[i].pid, workers[i].jobs_completed);
-                }
+                print_process_info(frontend_pid, dispatcher_pid);
                 break;
             }
             case 4:{
-                int jobs_count_done;
-                receive_from_pipe(frontend_out, &jobs_count_done);
-                printf("Progress: %.2f%%\n",
-                    (float) jobs_count_done/total_number_of_jobs * 100);
+                print_progress(total_number_of_jobs);
                 break;
             }
             case 5:{
-                printf("Commands:\n");
-                printf("[1] Add Workers <number>\n");
-                printf("[2] Remove Workers <number>\n");
-                printf("[3] Show Process Information\n");
-                printf("[4] Show Progress\n");
-                printf("[5] Help\n");
-                printf("[6] Quit\n");
+                print_help();
                 break;
             }
             case 6:{
-                printf("Quitting...\n");
-                exit(0);
+                exit_application();
+                break;
             }
             default:
                 printf("Unreachable: invalid code: %d\n", code);

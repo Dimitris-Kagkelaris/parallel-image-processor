@@ -3,10 +3,11 @@
 #include <stdlib.h>
 #include <errno.h>
 #include "stack.h"
+#include "util.h"
 
 // stack functions
 void initialize_stack(struct stack *s, int size){
-    s->a = (int *) malloc(size * sizeof(int));
+    s->a = (int *) safe_malloc(size * sizeof(int));
     s->size = size;
     s->top = 0;
 }
