@@ -10,9 +10,66 @@
 #include "util.h"
 #include "pipe_utils.h"
 
-int frontend_out;
+// typedef void (*command_handler)(void*);
 
-void print_process_info(pid_t frontend_pid, pid_t dispatcher_pid){
+struct command{
+    const char* name;
+    // pointer to function that takes arg void * and returns void
+    void (*command_handler)(void*);
+    const char* description;
+};
+
+void add_workers(void *arg);
+void remove_workers(void *arg);
+void print_process_info(void *arg);
+void print_progress(void *arg);
+void print_help(void *arg);
+void clear_screen(void *arg);
+void exit_application(void *arg);
+
+const struct command commands[] = {
+    {"add", add_workers, "Add workers"},
+    {"remove", remove_workers, "Remove workers"},
+    {"info", print_process_info, "Show process information"},
+    {"progress", print_progress, "Show progress"},
+    {"help", print_help, "Show help"},
+    {"clear", clear_screen, "Clear screen"},
+    {"exit", exit_application, "Exit the application"}
+};
+
+const unsigned int num_commands = sizeof(commands) / sizeof(command);
+
+int frontend_out;
+int worker_amount = 0;
+
+void add_workers(void *arg){
+    int number = *(int*)arg;
+    int message = -1;
+    receive_from_pipe(frontend_out, &message);
+    if(message != 0){
+        printf("Error encountered during adding workers\n");
+        exit(1);
+    }
+    worker_amount += number;
+    printf("Added %d workers!\n", number);
+}
+
+void remove_workers(void *arg){
+    int number = *(int*)arg;
+    int message = -1;
+    receive_from_pipe(frontend_out, &message);
+    if(message != 0){
+        printf("Error encountered during removing workers\n");
+        exit(1);
+    }
+    worker_amount -= number;
+    printf("Removed %d workers!\n", number);
+}
+
+void print_process_info(void *arg){
+    void **args = (void **)arg;
+    pid_t frontend_pid = *(pid_t *)args[0];
+    pid_t dispatcher_pid = *(pid_t *)args[1];
     printf("Frontend pid:   %d\n", frontend_pid);
     printf("Dispatcher pid: %d\n", dispatcher_pid);
     
@@ -33,24 +90,33 @@ void print_process_info(pid_t frontend_pid, pid_t dispatcher_pid){
     }
 }
 
-void print_progress(int total_number_of_jobs){
+void print_progress(void *arg){
+    int total_number_of_jobs = *(int*)arg;
     int jobs_count_done;
     receive_from_pipe(frontend_out, &jobs_count_done);
     printf("Progress: %.2f%%\n",
         (float) jobs_count_done/total_number_of_jobs * 100);
 }
 
-void print_help(){
+void print_help(void *arg){
+    (void)arg;
     printf("Commands:\n");
     printf("[1] Add Workers <number>\n");
     printf("[2] Remove Workers <number>\n");
     printf("[3] Show Process Information\n");
     printf("[4] Show Progress\n");
     printf("[5] Help\n");
-    printf("[6] Quit\n");
+    printf("[6] Exit\n");
 }
 
-void exit_application(){
+void clear_screen(void *arg){
+    (void)arg;
+    printf("\033[H\033[J");
+    fflush(stdout);
+}
+
+void exit_application(void *arg){
+    (void)arg;
     printf("Quitting...\n");
     exit(0);
 }
@@ -148,10 +214,6 @@ int main(int argc, char* argv[]){
 
     int total_number_of_jobs = 0;
     receive_from_pipe(frontend_out, &total_number_of_jobs);
-    int worker_amount = 0;
-
-
-
 
     print_help();
     int code, num;
@@ -207,33 +269,20 @@ int main(int argc, char* argv[]){
 
         switch(code){
             case 1:{
-                int message = -1;
-                receive_from_pipe(frontend_out, &message);
-                if(message != 0){
-                    printf("Error encountered during adding workers\n");
-                    exit(1);
-                }
-                worker_amount += num;
-                printf("Added %d workers!\n", num);
+                add_workers(&num);
                 break;
             }
             case 2:{
-                int message = -1;
-                receive_from_pipe(frontend_out, &message);
-                if(message != 0){
-                    printf("Error encountered during removing workers\n");
-                    exit(1);
-                }
-                worker_amount -= num;
-                printf("Removed %d workers!\n", num);
+                remove_workers(&num);
                 break;
             }
             case 3: {
-                print_process_info(frontend_pid, dispatcher_pid);
+                pid_t *pid_args[] = {&frontend_pid, &dispatcher_pid};
+                print_process_info(pid_args);
                 break;
             }
             case 4:{
-                print_progress(total_number_of_jobs);
+                print_progress(&total_number_of_jobs);
                 break;
             }
             case 5:{

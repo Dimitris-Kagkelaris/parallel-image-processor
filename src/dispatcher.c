@@ -125,7 +125,7 @@ void remove_workers(int num){
     workers_count = max(0, workers_count - num);
 }
 
-void show_process_info(){
+void show_process_info(void){
     send_over_pipe(dispatcher_in, workers_count);
     if(workers_count == 0){
         return;
@@ -134,7 +134,7 @@ void show_process_info(){
     send_array_over_pipe(dispatcher_in, workers, sizeof(workers));
 }
 
-void show_progress(){
+void show_progress(void){
     send_over_pipe(dispatcher_in, jobs_count_done);
 }
 
