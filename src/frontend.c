@@ -16,6 +16,7 @@ struct command{
     const char* name;
     // pointer to function that takes arg void * and returns void
     void (*command_handler)(void*);
+    const char* arguments;
     const char* description;
 };
 
@@ -28,14 +29,20 @@ void clear_screen(void *arg);
 void exit_application(void *arg);
 
 const struct command commands[] = {
-    // Add usage in description!!!!!!!!!!!!!!!!!!!!!
-    {"add", add_workers, "Add workers"},
-    {"remove", remove_workers, "Remove workers"},
-    {"status", print_process_status, "Show processes information"},
-    {"progress", print_progress, "Show progress"},
-    {"help", print_help, "Show help"},
-    {"clear", clear_screen, "Clear screen"},
-    {"exit", exit_application, "Exit the application"}
+    {"add", add_workers, "<count>",
+        "Add workers, up to the maximum worker limit."},
+    {"remove", remove_workers, "<count>",
+        "Remove workers, stopping at zero."},
+    {"status", print_process_status, NULL,
+        "Show frontend, dispatcher, and worker information."},
+    {"progress", print_progress, NULL,
+        "Show the percentage of completed jobs."},
+    {"help", print_help, NULL,
+        "Show this command list."},
+    {"clear", clear_screen, NULL,
+        "Clear the terminal screen."},
+    {"exit", exit_application, NULL,
+        "Exit the application."}
 };
 
 const int num_commands = sizeof(commands) / sizeof(struct command);
@@ -167,8 +174,19 @@ void print_progress(void *arg){
 
 void print_help(void *arg){
     (void)arg;
+    printf("Commands:\n");
     for(int i = 0; i < num_commands; ++i){
-        printf("[%d] %s: %s\n", i+1, commands[i].name, commands[i].description);
+        if(commands[i].arguments == NULL){
+            printf("  %s: %s\n",
+                commands[i].name,
+                commands[i].description);
+            }
+        else{
+            printf("  %s %s: %s\n",
+                commands[i].name,
+                commands[i].arguments,
+                commands[i].description);
+        }
     }
 }
 

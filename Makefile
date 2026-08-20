@@ -10,7 +10,7 @@ IMG_DIR = images
 TARGETS = frontend dispatcher worker
 BINARIES = $(addprefix $(BIN_DIR)/,$(TARGETS))
 
-.PHONY: all release debug run clean
+.PHONY: all release debug run run_rlwrap clean
 
 all: $(BINARIES)
 
@@ -44,6 +44,9 @@ OUT ?= output.ppm
 
 run: all
 	./$(BIN_DIR)/frontend $(IMG_DIR)/$(IN) $(IMG_DIR)/$(OUT) 2>logs.txt
+
+run_rlwrap: all
+	rlwrap ./$(BIN_DIR)/frontend $(IMG_DIR)/$(IN) $(IMG_DIR)/$(OUT) 2>logs.txt
 
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR) logs.txt
