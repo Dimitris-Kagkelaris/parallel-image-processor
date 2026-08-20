@@ -100,13 +100,9 @@ void print_progress(void *arg){
 
 void print_help(void *arg){
     (void)arg;
-    printf("Commands:\n");
-    printf("[1] Add Workers <number>\n");
-    printf("[2] Remove Workers <number>\n");
-    printf("[3] Show Process Information\n");
-    printf("[4] Show Progress\n");
-    printf("[5] Help\n");
-    printf("[6] Exit\n");
+    for(int i = 0; i < num_commands; ++i){
+        printf("[%d] %s: %s\n", i+1, commands[i].name, commands[i].description);
+    }
 }
 
 void clear_screen(void *arg){
