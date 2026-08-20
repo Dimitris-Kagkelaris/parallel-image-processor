@@ -229,24 +229,25 @@ int main(int argc, char* argv[]){
 
             int command_id = -1, amount = -1;
             while(receive_from_pipe(dispatcher_out, &command_id) > 0){
-                while(receive_from_pipe(dispatcher_out, &amount) == -1); // busy waits until amount is received
-
                 switch(command_id){
-                    case 1:
+                    case 0:
+                        // busy waits until amount is received
+                        while(receive_from_pipe(dispatcher_out, &amount) == -1);
                         add_workers(amount);
                         send_over_pipe(dispatcher_in, 0);
                         break;
                 
-                    case 2:
+                    case 1:
+                        while(receive_from_pipe(dispatcher_out, &amount) == -1);
                         remove_workers(amount);
                         send_over_pipe(dispatcher_in, 0);
                         break;
                 
-                    case 3:
+                    case 2:
                         show_process_info();
                         break;
                 
-                    case 4:
+                    case 3:
                         show_progress();
                         break;
                 

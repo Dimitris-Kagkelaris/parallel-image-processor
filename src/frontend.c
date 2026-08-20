@@ -7,6 +7,8 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <libgen.h>
+#include <errno.h>
+#include <string.h>
 #include "util.h"
 #include "pipe_utils.h"
 
@@ -28,6 +30,7 @@ void clear_screen(void *arg);
 void exit_application(void *arg);
 
 const struct command commands[] = {
+    // Add usage in description
     {"add", add_workers, "Add workers"},
     {"remove", remove_workers, "Remove workers"},
     {"info", print_process_info, "Show process information"},
@@ -37,13 +40,54 @@ const struct command commands[] = {
     {"exit", exit_application, "Exit the application"}
 };
 
-const unsigned int num_commands = sizeof(commands) / sizeof(command);
+const int num_commands = sizeof(commands) / sizeof(struct command);
 
+pid_t frontend_pid;
+pid_t dispatcher_pid;
+int frontend_in;
 int frontend_out;
 int worker_amount = 0;
+int total_number_of_jobs = 0;
+
+bool validate_number_of_workers(char *number, int *number_of_workers){
+    if(number == NULL){
+        printf("Please provide a number in the range [1, %d]!\n", MAX_WORKERS);
+        return false;
+    }
+    char *end;
+    errno = 0;
+    long num = strtol(number, &end, 10);
+    if (end == number || *end != '\0' || errno == ERANGE || num <= 0){
+        printf("Please provide a positive number of workers in the range [1, %d]!\n", MAX_WORKERS);
+        return false;
+    }
+
+    if(num > MAX_WORKERS){
+        num = MAX_WORKERS + 10;
+    }
+    *number_of_workers = num;
+    return true;
+}
 
 void add_workers(void *arg){
-    int number = *(int*)arg;
+    if(worker_amount == MAX_WORKERS){
+        printf("Cannot add more workers. Already at max: %d.\n", MAX_WORKERS);
+        return;
+    }
+    int number;
+    if(!validate_number_of_workers(arg, &number)){
+        return;
+    }
+    if(number + worker_amount > MAX_WORKERS){
+        printf("Too many workers to add. I will set worker number to max: %d.\n", MAX_WORKERS);
+        number = MAX_WORKERS - worker_amount;
+    }
+
+    // send number to dispatcher + notify dispatcher
+    send_over_pipe(frontend_in, number);
+    kill(dispatcher_pid, SIGUSR1);
+
+    // response from dispatcher
     int message = -1;
     receive_from_pipe(frontend_out, &message);
     if(message != 0){
@@ -55,7 +99,24 @@ void add_workers(void *arg){
 }
 
 void remove_workers(void *arg){
-    int number = *(int*)arg;
+    if(worker_amount == 0){
+        printf("Cannot remove workers. Already at min: 0.\n");
+        return;
+    }
+    int number;
+    if(!validate_number_of_workers(arg, &number)){
+        return;
+    }
+    if(number > worker_amount){
+        printf("Not enough workers to remove. I will set worker number to 0.\n");
+        number = worker_amount;
+    }
+
+    // send number to dispatcher + notify dispatcher
+    send_over_pipe(frontend_in, number);
+    kill(dispatcher_pid, SIGUSR1);
+
+    // response from dispatcher
     int message = -1;
     receive_from_pipe(frontend_out, &message);
     if(message != 0){
@@ -67,9 +128,9 @@ void remove_workers(void *arg){
 }
 
 void print_process_info(void *arg){
-    void **args = (void **)arg;
-    pid_t frontend_pid = *(pid_t *)args[0];
-    pid_t dispatcher_pid = *(pid_t *)args[1];
+    kill(dispatcher_pid, SIGUSR1);
+
+    (void)arg;
     printf("Frontend pid:   %d\n", frontend_pid);
     printf("Dispatcher pid: %d\n", dispatcher_pid);
     
@@ -77,7 +138,7 @@ void print_process_info(void *arg){
     receive_from_pipe(frontend_out, &worker_count);
     printf("Workers: %d\n", worker_count);
     if (worker_count == 0) {
-        break;
+        return;
     }
     
     struct worker* workers = (struct worker*)safe_malloc(MAX_WORKERS * sizeof(struct worker));
@@ -88,10 +149,12 @@ void print_process_info(void *arg){
         printf("  %-4d %-8d %-8d %-10d\n",
             i+1, workers[i].current_job, workers[i].pid, workers[i].jobs_completed);
     }
+    free(workers);
 }
 
 void print_progress(void *arg){
-    int total_number_of_jobs = *(int*)arg;
+    kill(dispatcher_pid, SIGUSR1);
+    (void)arg;
     int jobs_count_done;
     receive_from_pipe(frontend_out, &jobs_count_done);
     printf("Progress: %.2f%%\n",
@@ -113,7 +176,7 @@ void clear_screen(void *arg){
 
 void exit_application(void *arg){
     (void)arg;
-    printf("Quitting...\n");
+    printf("Exiting...\n");
     exit(0);
 }
 
@@ -153,13 +216,12 @@ int main(int argc, char* argv[]){
         exit(1);
     }
     
-    pid_t frontend_pid = getpid();
-    pid_t dispatcher_pid;
+    frontend_pid = getpid();
 
     // create 2 pipes for communication with dispatcher
     int fd[2];
     create_pipe(fd);
-    int frontend_in = fd[1];
+    frontend_in = fd[1];
     int dispatcher_out = fd[0];
     int flags = fcntl(dispatcher_out, F_GETFL, 0);
     fcntl(dispatcher_out, F_SETFL, flags | O_NONBLOCK); // make the pipe non blocking
@@ -208,89 +270,40 @@ int main(int argc, char* argv[]){
     close(dispatcher_out);
     dispatcher_pid = p;
 
-    int total_number_of_jobs = 0;
     receive_from_pipe(frontend_out, &total_number_of_jobs);
 
-    print_help();
-    int code, num;
+    print_help(NULL);
+    // int code, num;
+    char *line = NULL;
+    size_t buffer_len = 0;
     while(1){
-        code = -1; num = -1;
         printf("> ");
-        int read = scanf("%d", &code);
-        if(read == EOF){
+        
+        if(getline(&line, &buffer_len, stdin) == EOF){
             // reached EOF, wait for SIGCHLD
             while(1){ pause(); }
         }
-
-        if(read != 1 || code < 1 || code > 6){
-            printf("Not a valid command id: %d\n", code);
-            flush_input_buffer();
+        char *cmd = strtok(line, " \n");
+        char *cmd_args = strtok(NULL, "\n");
+        if(cmd == NULL){
             continue;
         }
-        
-        // if it's add or remove workers you need a number
-        if(code < 3){
-            if(scanf("%d", &num) != 1 || num <= 0){
-                printf("Please provide a positive number of workers!\n");
-                flush_input_buffer();
-                continue;
-            }
 
-            if(code == 1 && num + worker_amount > MAX_WORKERS){
-                if(worker_amount == MAX_WORKERS){
-                    printf("Cannot add more workers. Already at max: %d.\n", MAX_WORKERS);
-                    flush_input_buffer();
-                    continue;
+        // dispatch
+        bool invalid_command = 1;
+        for(int i = 0; i < num_commands; ++i){
+            if(strcmp(cmd, commands[i].name) == 0){
+                invalid_command = 0;
+                // send command id to dispatcher over pipe if needed
+                if(i < 4){
+                    send_over_pipe(frontend_in, i);
                 }
-                printf("Too many workers to add. I will set worker number to max: %d.\n", MAX_WORKERS);
-                num = MAX_WORKERS - worker_amount;
-            }
-            else if(code == 2 && num > worker_amount){
-                if(worker_amount == 0){
-                    printf("Cannot remove workers. Already at 0.\n");
-                    flush_input_buffer();
-                    continue;
-                }
-                printf("Not enough workers to remove. I will set worker number to 0.\n");
-                num = worker_amount;
+                commands[i].command_handler(cmd_args);
+                break;
             }
         }
-        flush_input_buffer();
-
-        if(code < 5){
-            send_over_pipe(frontend_in, code);
-            send_over_pipe(frontend_in, num);
-            kill(dispatcher_pid, SIGUSR1);
+        if(invalid_command){
+            printf("Invalid command!\n");
         }
-
-        switch(code){
-            case 1:{
-                add_workers(&num);
-                break;
-            }
-            case 2:{
-                remove_workers(&num);
-                break;
-            }
-            case 3: {
-                pid_t *pid_args[] = {&frontend_pid, &dispatcher_pid};
-                print_process_info(pid_args);
-                break;
-            }
-            case 4:{
-                print_progress(&total_number_of_jobs);
-                break;
-            }
-            case 5:{
-                print_help();
-                break;
-            }
-            case 6:{
-                exit_application();
-                break;
-            }
-            default:
-                printf("Unreachable: invalid code: %d\n", code);
-        };
     }
 }
