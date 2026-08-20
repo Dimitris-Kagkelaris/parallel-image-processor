@@ -125,7 +125,7 @@ void remove_workers(int num){
     workers_count = max(0, workers_count - num);
 }
 
-void show_process_info(void){
+void show_process_status(void){
     send_over_pipe(dispatcher_in, workers_count);
     if(workers_count == 0){
         return;
@@ -244,7 +244,7 @@ int main(int argc, char* argv[]){
                         break;
                 
                     case 2:
-                        show_process_info();
+                        show_process_status();
                         break;
                 
                     case 3:

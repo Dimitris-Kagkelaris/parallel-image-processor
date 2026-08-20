@@ -12,8 +12,6 @@
 #include "util.h"
 #include "pipe_utils.h"
 
-// typedef void (*command_handler)(void*);
-
 struct command{
     const char* name;
     // pointer to function that takes arg void * and returns void
@@ -23,17 +21,17 @@ struct command{
 
 void add_workers(void *arg);
 void remove_workers(void *arg);
-void print_process_info(void *arg);
+void print_process_status(void *arg);
 void print_progress(void *arg);
 void print_help(void *arg);
 void clear_screen(void *arg);
 void exit_application(void *arg);
 
 const struct command commands[] = {
-    // Add usage in description
+    // Add usage in description!!!!!!!!!!!!!!!!!!!!!
     {"add", add_workers, "Add workers"},
     {"remove", remove_workers, "Remove workers"},
-    {"info", print_process_info, "Show process information"},
+    {"status", print_process_status, "Show processes information"},
     {"progress", print_progress, "Show progress"},
     {"help", print_help, "Show help"},
     {"clear", clear_screen, "Clear screen"},
@@ -83,7 +81,8 @@ void add_workers(void *arg){
         number = MAX_WORKERS - worker_amount;
     }
 
-    // send number to dispatcher + notify dispatcher
+    // send command id, number + notify dispatcher
+    send_over_pipe(frontend_in, 0);
     send_over_pipe(frontend_in, number);
     kill(dispatcher_pid, SIGUSR1);
 
@@ -112,7 +111,8 @@ void remove_workers(void *arg){
         number = worker_amount;
     }
 
-    // send number to dispatcher + notify dispatcher
+    // send command id, number + notify dispatcher
+    send_over_pipe(frontend_in, 1);
     send_over_pipe(frontend_in, number);
     kill(dispatcher_pid, SIGUSR1);
 
@@ -127,7 +127,9 @@ void remove_workers(void *arg){
     printf("Removed %d workers!\n", number);
 }
 
-void print_process_info(void *arg){
+void print_process_status(void *arg){
+    // send command id + notify dispatcher
+    send_over_pipe(frontend_in, 2);
     kill(dispatcher_pid, SIGUSR1);
 
     (void)arg;
@@ -142,7 +144,7 @@ void print_process_info(void *arg){
     }
     
     struct worker* workers = (struct worker*)safe_malloc(MAX_WORKERS * sizeof(struct worker));
-    receive_array_from_pipe(frontend_out, workers, sizeof(workers));
+    receive_array_from_pipe(frontend_out, workers, MAX_WORKERS * sizeof(struct worker));
 
     printf("  %-4s %-8s %-8s %-10s\n", "idx", "job", "pid", "completed");
     for (int i = 0; i < worker_count; ++i) {
@@ -153,6 +155,8 @@ void print_process_info(void *arg){
 }
 
 void print_progress(void *arg){
+    // send command id + notify dispatcher
+    send_over_pipe(frontend_in, 3);
     kill(dispatcher_pid, SIGUSR1);
     (void)arg;
     int jobs_count_done;
@@ -171,7 +175,6 @@ void print_help(void *arg){
 void clear_screen(void *arg){
     (void)arg;
     printf("\033[H\033[J");
-    fflush(stdout);
 }
 
 void exit_application(void *arg){
@@ -273,11 +276,11 @@ int main(int argc, char* argv[]){
     receive_from_pipe(frontend_out, &total_number_of_jobs);
 
     print_help(NULL);
-    // int code, num;
     char *line = NULL;
     size_t buffer_len = 0;
     while(1){
         printf("> ");
+        fflush(stdout);
         
         if(getline(&line, &buffer_len, stdin) == EOF){
             // reached EOF, wait for SIGCHLD
@@ -294,10 +297,6 @@ int main(int argc, char* argv[]){
         for(int i = 0; i < num_commands; ++i){
             if(strcmp(cmd, commands[i].name) == 0){
                 invalid_command = 0;
-                // send command id to dispatcher over pipe if needed
-                if(i < 4){
-                    send_over_pipe(frontend_in, i);
-                }
                 commands[i].command_handler(cmd_args);
                 break;
             }
