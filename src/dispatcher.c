@@ -183,7 +183,7 @@ int main(int argc, char* argv[]){
         perror("fstat");
         exit(1);
     }
-    off_t expected_size = input_specs.header_size + (off_t)input_specs.width * input_specs.height * 3;
+    off_t expected_size = input_specs.header_size + (off_t)input_specs.width * input_specs.height * STRIDE;
     if (st.st_size != expected_size) {
         fprintf(stderr, "[Dispatcher]: Invalid/truncated PPM file\n");
         exit(1);

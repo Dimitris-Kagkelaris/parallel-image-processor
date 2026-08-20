@@ -8,7 +8,6 @@
 #include <string.h>
 #include <sys/prctl.h>
 #include <signal.h>
-#define STRIDE 3
 #include "util.h"
 #include "pipe_utils.h"
 

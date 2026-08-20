@@ -1,6 +1,7 @@
 #ifndef UTIL_H  
 #define UTIL_H
 #define MAX_WORKERS 500
+#define STRIDE 3
 // more workers will exceed the 1024 open file descriptor soft limit per process for the dispatcher and crash
 #include <stdbool.h>
 #include <sys/types.h>
