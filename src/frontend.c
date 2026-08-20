@@ -224,6 +224,11 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
+    if(strcmp(argv[1], argv[2]) == 0){
+        printf("Input and output files must be different!\n");
+        exit(1);
+    }
+
     // set up signal communication with dispatcher
     struct sigaction sa;
     sigset_t sigset;
