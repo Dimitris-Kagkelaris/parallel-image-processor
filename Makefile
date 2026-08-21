@@ -43,7 +43,7 @@ $(OBJ_DIR)/frontend.o $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/worker.o $(OBJ_DIR)/pip
 $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/stack.o: $(INC_DIR)/stack.h
 
 IN  ?= nature.ppm
-OUT ?= output.ppm
+OUT ?= output.pgm
 
 run: all
 	./$(BIN_DIR)/frontend $(IMG_DIR)/$(IN) $(IMG_DIR)/$(OUT) 2>logs.txt
