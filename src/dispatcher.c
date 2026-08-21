@@ -131,7 +131,7 @@ void show_process_status(void){
         return;
     }
     
-    send_array_over_pipe(dispatcher_in, workers, sizeof(workers));
+    send_array_over_pipe(dispatcher_in, workers, sizeof(struct worker) * workers_count);
 }
 
 void show_progress(void){

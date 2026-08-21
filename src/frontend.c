@@ -150,8 +150,8 @@ void print_process_status(void *arg){
         return;
     }
     
-    struct worker* workers = (struct worker*)safe_malloc(MAX_WORKERS * sizeof(struct worker));
-    receive_array_from_pipe(frontend_out, workers, MAX_WORKERS * sizeof(struct worker));
+    struct worker* workers = (struct worker*)safe_malloc(worker_count * sizeof(struct worker));
+    receive_array_from_pipe(frontend_out, workers, worker_count * sizeof(struct worker));
 
     printf("  %-4s %-8s %-8s %-10s\n", "idx", "job", "pid", "completed");
     for (int i = 0; i < worker_count; ++i) {
