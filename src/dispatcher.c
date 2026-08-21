@@ -29,7 +29,7 @@ struct image_specs input_specs;
 struct image_specs output_specs;
 
 struct stack jobs;
-size_t jobs_count_done;
+int jobs_count_done;
 
 pid_t dispatcher_pid;
 char *dispatcher_dirname;
@@ -189,19 +189,19 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
-    size_t work_size = (size_t)input_specs.width*(size_t)input_specs.height;
+    size_t work_size = (size_t)input_specs.width * (size_t)input_specs.height;
     if(work_size == 0){
         fprintf(stderr, "[Dispatcher]: Input image is empty\n");
         exit(1);
     }
-    size_t number_of_jobs = work_size/packet_size + (work_size % packet_size > 0);
-    LOG("[Dispatcher]: number of jobs: %ld\n", number_of_jobs);
+    int number_of_jobs = (int)(work_size / packet_size + (work_size % packet_size > 0));
+    LOG("[Dispatcher]: number of jobs: %d\n", number_of_jobs);
     // tell frontend how many jobs we have
     send_over_pipe(dispatcher_in, number_of_jobs);
     
 
     initialize_stack(&jobs, number_of_jobs+10);
-    for(size_t i = 0; i < number_of_jobs; ++i){
+    for(int i = 0; i < number_of_jobs; ++i){
         push(&jobs, i);
     }
 
