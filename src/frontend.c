@@ -310,7 +310,7 @@ int main(int argc, char* argv[]){
     dispatcher_pid = p;
 
     if(receive_from_pipe(frontend_out, &total_number_of_jobs) == 0){
-        printf("Dispatcher failed to start!\n")
+        printf("Dispatcher failed to start!\n");
         exit(1);
     }
 
