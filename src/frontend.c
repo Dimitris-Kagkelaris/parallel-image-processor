@@ -96,7 +96,10 @@ void add_workers(void *arg){
 
     // response from dispatcher
     int message = -1;
-    receive_from_pipe(frontend_out, &message);
+    if(receive_from_pipe(frontend_out, &message) == 0){
+        printf("Dispatcher has finished — Workers cannot be added.\n");
+        return;
+    }
     if(message != 0){
         printf("Error encountered during adding workers\n");
         exit(1);
@@ -126,7 +129,10 @@ void remove_workers(void *arg){
 
     // response from dispatcher
     int message = -1;
-    receive_from_pipe(frontend_out, &message);
+    if(receive_from_pipe(frontend_out, &message) == 0){
+        printf("Dispatcher has finished — Workers cannot be removed.\n");
+        return;
+    }
     if(message != 0){
         printf("Error encountered during removing workers\n");
         exit(1);
@@ -303,7 +309,10 @@ int main(int argc, char* argv[]){
     close(dispatcher_out);
     dispatcher_pid = p;
 
-    receive_from_pipe(frontend_out, &total_number_of_jobs);
+    if(receive_from_pipe(frontend_out, &total_number_of_jobs) == 0){
+        printf("Dispatcher failed to start!\n")
+        exit(1);
+    }
 
     print_help(NULL);
     char *line = NULL;
@@ -312,7 +321,7 @@ int main(int argc, char* argv[]){
         printf("> ");
         fflush(stdout);
         
-        if(getline(&line, &buffer_len, stdin) == EOF){
+        if(getline(&line, &buffer_len, stdin) == -1){
             putchar('\n');
             exit_application(NULL);
         }
