@@ -24,7 +24,6 @@ struct worker workers[MAX_WORKERS];
 
 int input_file;
 int output_file;
-const int packet_size = 512;//////// welll see about that........................................
 struct image_specs input_specs;
 struct image_specs output_specs;
 
@@ -74,19 +73,16 @@ void worker_init(int pos){
         char arg2[10];
         char arg3[10];
         char arg4[10];
-        char arg5[10];
         sprintf(arg1, "%d", worker_out);
         sprintf(arg2, "%d", worker_in);
-        sprintf(arg3, "%d", packet_size);
-        sprintf(arg4, "%d", input_file);
-        sprintf(arg5, "%d", output_file);
+        sprintf(arg3, "%d", input_file);
+        sprintf(arg4, "%d", output_file);
         char *args[] = {
             arg0,
             arg1,
             arg2,
             arg3,
             arg4,
-            arg5,
             NULL
         };
         execv(arg0, args);
@@ -194,7 +190,7 @@ int main(int argc, char* argv[]){
         fprintf(stderr, "[Dispatcher]: Input image is empty\n");
         exit(1);
     }
-    int number_of_jobs = (int)(work_size / packet_size + (work_size % packet_size > 0));
+    int number_of_jobs = (int)(work_size / PACKET_SIZE + (work_size % PACKET_SIZE > 0));
     LOG("[Dispatcher]: number of jobs: %d\n", number_of_jobs);
     // tell frontend how many jobs we have
     send_over_pipe(dispatcher_in, number_of_jobs);

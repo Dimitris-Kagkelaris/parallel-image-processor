@@ -18,16 +18,15 @@
 #endif
 
 int main(int argc, char* argv[]){
-    if (argc != 6) {
-        fprintf(stderr, "Usage: %s <pipe_out> <pipe_in> <packet_size> <input_fd> <output_fd>\n", argv[0]);
+    if (argc != 5) {
+        fprintf(stderr, "Usage: %s <pipe_out> <pipe_in> <input_fd> <output_fd>\n", argv[0]);
         return 1;
     }
 
     int pipe_in = atoi(argv[2]);
     int pipe_out = atoi(argv[1]);
-    const int packet_size = atoi(argv[3]);
-    int input_file = atoi(argv[4]);
-    int output_file = atoi(argv[5]);
+    int input_file = atoi(argv[3]);
+    int output_file = atoi(argv[4]);
     
     struct image_specs input_specs;
     struct image_specs output_specs;
@@ -42,12 +41,12 @@ int main(int argc, char* argv[]){
             LOG("[Worker (%d)]: No more jobs. Exiting.\n", getpid());
             exit(0);
         }
-        off_t read_byte_offset = input_specs.header_size + (off_t)job_id * packet_size * STRIDE;
-        ssize_t read_size = packet_size * STRIDE;
+        off_t read_byte_offset = input_specs.header_size + (off_t)job_id * PACKET_SIZE * STRIDE;
+        ssize_t read_size = PACKET_SIZE * STRIDE;
         LOG("[Worker (%d)]: I will search editing from %ld byte offset in the input file.\n", getpid(), read_byte_offset);
 
         // read from file
-        unsigned char buff[512 * STRIDE];
+        unsigned char buff[PACKET_SIZE * STRIDE];
         ssize_t bytes_read = 1;
         while(bytes_read > 0){// read until EOF
             bytes_read = pread(input_file, buff, min(read_size, sizeof(buff)), read_byte_offset);
