@@ -2,7 +2,9 @@
 
 A worker pool for parallel image transformations in C, using fork/exec, pipes, signals — with a REPL-driven frontend.
 
-![Screenshot](docs/interface_screenshot.png)
+<p align="center">
+  <img src="docs/interface_screenshot.png" alt="interface" width="800">
+</p>
 
 ## Architecture
 Work is distributed across three types of processes:
@@ -13,4 +15,6 @@ Dispatcher — divides the image into jobs, maintains the job queue, dynamically
 
 Worker — receives job IDs from the dispatcher, uses pread() to read the assigned region of the input image, processes the pixels, and uses pwrite() to write the result to the corresponding region of the output image.
 
-![Architecture](docs/parallel_image_processor.svg)
+<p align="center">
+  <img src="docs/architecture.svg" alt="Architecture" width="1200">
+</p>
