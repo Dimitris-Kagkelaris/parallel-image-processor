@@ -82,6 +82,9 @@ int main(int argc, char* argv[]){
             read_size -= i;
             read_byte_offset += i;
         }
+        #ifdef SLEEP
+        sleep(1);
+        #endif
         LOG("[Worker (%d)]: I'm done with job %d.\n", getpid(), job_id);
         send_over_pipe(pipe_in, 0);
     }

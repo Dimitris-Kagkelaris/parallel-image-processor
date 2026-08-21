@@ -20,6 +20,9 @@ release: all
 debug: CFLAGS += -g -O0 -DDEBUG
 debug: all
 
+sleep: CFLAGS += -DSLEEP
+sleep: debug
+
 $(BIN_DIR)/frontend: $(OBJ_DIR)/frontend.o $(OBJ_DIR)/util.o $(OBJ_DIR)/pipe_utils.o | $(BIN_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
 

@@ -68,6 +68,7 @@ bool validate_number_of_workers(char *number, int *number_of_workers){
     }
 
     if(num > MAX_WORKERS){
+        // this is intentional so that it gets re clamped later
         num = MAX_WORKERS + 10;
     }
     *number_of_workers = num;
@@ -144,7 +145,10 @@ void print_process_status(void *arg){
     printf("Dispatcher pid: %d\n", dispatcher_pid);
     
     int worker_count;
-    receive_from_pipe(frontend_out, &worker_count);
+    if(receive_from_pipe(frontend_out, &worker_count) == 0){
+        printf("Dispatcher has finished — no process status to report.\n");
+        return;
+    }
     printf("Workers: %d\n", worker_count);
     if (worker_count == 0) {
         return;
@@ -167,7 +171,10 @@ void print_progress(void *arg){
     kill(dispatcher_pid, SIGUSR1);
     (void)arg;
     int jobs_count_done;
-    receive_from_pipe(frontend_out, &jobs_count_done);
+    if(receive_from_pipe(frontend_out, &jobs_count_done) == 0){
+        printf("Dispatcher has finished — no live progress to report.\n");
+        return;
+    }
     printf("Progress: %.2f%%\n",
         (float) jobs_count_done/total_number_of_jobs * 100);
 }
@@ -274,7 +281,7 @@ int main(int argc, char* argv[]){
 
         char arg0[100];
         char *dir = dirname(argv[0]);
-        sprintf(arg0, "%s/dispatcher", dir);
+        snprintf(arg0, sizeof(arg0), "%s/dispatcher", dir);
         char arg1[10];
         char arg2[10];
         sprintf(arg1, "%d", dispatcher_out);
@@ -306,11 +313,11 @@ int main(int argc, char* argv[]){
         fflush(stdout);
         
         if(getline(&line, &buffer_len, stdin) == EOF){
-            // reached EOF, wait for SIGCHLD
-            while(1){ pause(); }
+            putchar('\n');
+            exit_application(NULL);
         }
-        char *cmd = strtok(line, " \n");
-        char *cmd_args = strtok(NULL, "\n");
+        char *cmd = strtok(line, " \t\n");
+        char *cmd_args = strtok(NULL, " \t\n");
         if(cmd == NULL){
             continue;
         }

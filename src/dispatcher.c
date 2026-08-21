@@ -69,7 +69,7 @@ void worker_init(int pos){
         }
         
         char arg0[100];
-        sprintf(arg0, "%s/worker", dispatcher_dirname);
+        snprintf(arg0, sizeof(arg0), "%s/worker", dispatcher_dirname);
         char arg1[10];
         char arg2[10];
         char arg3[10];
@@ -216,8 +216,22 @@ int main(int argc, char* argv[]){
     output_specs = input_specs;
     output_specs.header_size = (off_t)strlen(output_header);
     off_t output_file_size = output_specs.header_size + (off_t)output_specs.width * output_specs.height;
-    ftruncate(output_file, output_file_size);
-    write(output_file, output_header, strlen(output_header));
+    if (ftruncate(output_file, output_file_size) == -1) {
+        perror("ftruncate output file");
+        close(output_file);
+        exit(1);
+    }
+    ssize_t write_size = strlen(output_header);
+    ssize_t total_bytes_written = 0;
+    while(total_bytes_written < write_size){
+        ssize_t bytes_written = write(output_file, output_header + total_bytes_written, 
+            min(write_size - total_bytes_written, sizeof(output_header)));
+        if (bytes_written == -1){
+            perror("write");
+            exit(1);
+        }
+        total_bytes_written += bytes_written;
+    }
 
     while(1){
         if(jobs_count_done == number_of_jobs){
