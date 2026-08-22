@@ -2,7 +2,9 @@ logs.txt
 bin/
 obj/
 helper/
-images/
+/images/*
+!/images/sample.ppm
+!/images/result.pgm
 todo.txt
 benchmark.py
 benchmark_raw.csv

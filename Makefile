@@ -10,7 +10,7 @@ IMG_DIR = images
 TARGETS = frontend dispatcher worker
 BINARIES = $(addprefix $(BIN_DIR)/,$(TARGETS))
 
-.PHONY: all release debug run run_rlwrap clean
+.PHONY: all release debug sleep-debug run run-rlwrap clean
 
 all: $(BINARIES)
 
@@ -20,8 +20,8 @@ release: all
 debug: CFLAGS += -g -O0 -DDEBUG
 debug: all
 
-sleep: CFLAGS += -DSLEEP
-sleep: debug
+sleep-debug: CFLAGS += -DSLEEP
+sleep-debug: debug
 
 $(BIN_DIR)/frontend: $(OBJ_DIR)/frontend.o $(OBJ_DIR)/util.o $(OBJ_DIR)/pipe_utils.o | $(BIN_DIR)
 	$(CC) $(CFLAGS) $^ -o $@
@@ -42,13 +42,13 @@ $(OBJ_DIR)/frontend.o $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/worker.o $(OBJ_DIR)/uti
 $(OBJ_DIR)/frontend.o $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/worker.o $(OBJ_DIR)/pipe_utils.o: $(INC_DIR)/pipe_utils.h
 $(OBJ_DIR)/dispatcher.o $(OBJ_DIR)/stack.o: $(INC_DIR)/stack.h
 
-IN  ?= nature.ppm
+IN  ?= input.ppm
 OUT ?= output.pgm
 
 run: all
 	./$(BIN_DIR)/frontend $(IMG_DIR)/$(IN) $(IMG_DIR)/$(OUT) 2>logs.txt
 
-run_rlwrap: all
+run-rlwrap: all
 	rlwrap ./$(BIN_DIR)/frontend $(IMG_DIR)/$(IN) $(IMG_DIR)/$(OUT) 2>logs.txt
 
 clean:
