@@ -2,9 +2,10 @@
 
 A worker-pool-based system for parallel image transformations in C, using `fork()`/`exec()`, Unix pipes, signals, and a REPL-driven frontend.
 
-image is too big!!!!!!
 <p align="center">
-  <img src="docs/interface_screenshot.png" alt="interface screenshot" width="80%">
+  <img src="docs/interface_screenshot.png"
+       alt="Parallel Image Processor REPL"
+       width="700">
 </p>
 
 ## Architecture
@@ -69,3 +70,18 @@ Place the input image in the `./images/` directory before running the applicatio
 * **`make run IN=image.ppm OUT=processed.pgm`** — runs the application using the specified input and output filenames. The output file is created if it does not already exist. `IN` defaults to `input.ppm` and `OUT` defaults to `output.pgm`. Diagnostic output from `stderr` is redirected to `logs.txt`.
 
 * **`make run-rlwrap IN=image.ppm OUT=processed.pgm`** — runs the application through `rlwrap`, providing command history and improved line editing for the REPL. `rlwrap` must be installed separately.
+
+## How to use
+
+Once the application is running, the frontend provides an interactive command interface for controlling the worker pool and monitoring processing.
+
+| Command          | Description                                           |
+| ---------------- | ----------------------------------------------------- |
+| `add <count>`    | Add worker processes, up to the maximum worker limit. |
+| `remove <count>` | Remove worker processes, stopping at zero.            |
+| `status`         | Show frontend, dispatcher, and worker information.    |
+| `progress`       | Show the percentage of completed jobs.                |
+| `help`           | Display the available commands.                       |
+| `clear`          | Clear the terminal screen.                            |
+| `exit`           | Exit the application.                                 |
+
