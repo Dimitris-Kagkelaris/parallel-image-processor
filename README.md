@@ -5,7 +5,7 @@ A worker-pool-based system for parallel image transformations in C, using `fork(
 <p align="center">
   <img src="docs/interface_screenshot.png"
        alt="Parallel Image Processor REPL"
-       width="700">
+       width="80%">
 </p>
 
 ## Architecture
