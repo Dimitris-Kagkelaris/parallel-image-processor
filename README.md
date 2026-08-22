@@ -114,3 +114,14 @@ Once the application is running, the frontend provides an interactive command in
 4. Right now only Grayscale, soon there will be more
 5. Only PPM format, no compressed formats (if we switch to mmap it might support them too, who knows?)
 6. Limited to MAX_WORKERS = 500, because of fd soft limit to 1024 but nevertheless no point having many workers than cores in the computer, as proven in earlier benchmarking
+
+## Future work
+
+what?
+
+# Author/Contact
+
+dimlaris the king
+
+
+add an MIT license lol...
