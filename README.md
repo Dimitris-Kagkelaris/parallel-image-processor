@@ -1,5 +1,5 @@
 # Parallel Image Processor
-
+ADD IMAGES SOMEWHERE, maybe?
 A worker-pool-based system for parallel image transformations in C, using `fork()`/`exec()`, Unix pipes, signals, and a REPL-driven frontend.
 
 <p align="center">
@@ -19,3 +19,12 @@ Work is distributed across three types of processes:
 <p align="center">
   <img src="docs/architecture.svg" alt="Architecture" width="1200">
 </p>
+
+## Features
+
+* REPL interface that can be paired with rlwrap for a seamless user experience
+* Number of workers can be scaled at runtime
+* Live progress + report of workers' status
+* Automatic detection and respawn of crashed workers
+* various builds? 
+* currently compatible with PPM P6 files

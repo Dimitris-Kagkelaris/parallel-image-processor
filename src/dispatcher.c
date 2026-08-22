@@ -231,7 +231,7 @@ int main(int argc, char* argv[]){
 
     while(1){
         if(jobs_count_done == number_of_jobs){
-            fprintf(stderr, "[Dispatcher]: All jobs done. Exiting.\n");
+            LOG("[Dispatcher]: All jobs done. Exiting.\n");
             exit(0);
         }
         while(command_arrived){
