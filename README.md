@@ -1,9 +1,10 @@
 # Parallel Image Processor
-ADD IMAGES SOMEWHERE, maybe?
+
 A worker-pool-based system for parallel image transformations in C, using `fork()`/`exec()`, Unix pipes, signals, and a REPL-driven frontend.
 
+image is too big!!!!!!
 <p align="center">
-  <img src="docs/interface_screenshot.png" alt="Interface screenshot" width="700">
+  <img src="docs/interface_screenshot.png" alt="interface screenshot" width="80%">
 </p>
 
 ## Architecture
@@ -17,7 +18,7 @@ Work is distributed across three types of processes:
 * **Worker** — receives job IDs from the dispatcher, uses `pread()` to read the assigned region of the input image, processes the pixels, and uses `pwrite()` to write the result to the corresponding region of the output image.
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="Architecture" width="1200">
+  <img src="docs/architecture.svg" alt="architecture" width="120%">
 </p>
 
 ## Features
@@ -33,6 +34,21 @@ Work is distributed across three types of processes:
 * **Extensible parallel image processing** — currently demonstrates RGB-to-grayscale conversion, with a modular architecture designed to support additional image transformations.
 
 * **P6 PPM input support** — currently supports 8-bit P6 PPM images and produces grayscale PGM output.
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/input_preview.png" alt="Input PPM image" width="100%">
+    </td>
+    <td align="center">
+      <img src="docs/output_preview.png" alt="Output PGM image" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Input — P6 PPM</strong></td>
+    <td align="center"><strong>Output — P5 PGM</strong></td>
+  </tr>
+</table>
 
 ## Builds
 
