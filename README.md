@@ -22,15 +22,6 @@ Work is distributed across three types of processes:
 
 ## Features
 
-* REPL interface that can be paired with rlwrap for a seamless user experience
-* Number of workers can be scaled at runtime
-* Live progress + report of workers' status
-* Automatic detection and respawn of crashed workers
-* currently transforms colored images to grayscale ones (other transformations to be added soon)
-* currently compatible with PPM P6 files
-
-## Features
-
 * **Interactive REPL** for controlling the application at runtime; can be paired with `rlwrap` for command history and improved line editing.
 
 * **Dynamic worker scaling** — add or remove worker processes while image processing is in progress.

@@ -3,8 +3,8 @@ bin/
 obj/
 helper/
 /images/*
-!/images/sample.ppm
-!/images/result.pgm
+!/images/input.ppm
+!/images/output.pgm
 todo.txt
 benchmark.py
 benchmark_raw.csv
