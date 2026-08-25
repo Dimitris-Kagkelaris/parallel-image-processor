@@ -130,5 +130,5 @@ Once the application is running, the frontend provides an interactive command in
 
 ## Author
 
-**Dimitris Kagkelaris**
-GitHub: [Dimitris-Kagkelaris]([https://github.com/Dimitris-Kagkelaris])
+**Dimitrios Kagkelaris**<br>
+GitHub: ([Dimitris-Kagkelaris](https://github.com/Dimitris-Kagkelaris))
