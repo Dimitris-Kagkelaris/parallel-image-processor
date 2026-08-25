@@ -16,7 +16,7 @@ void send_over_pipe(int fd, int data){
     if (write(fd, &data, sizeof(data)) != sizeof(data)) {
         perror("write to pipe");
         exit(1);
-    }
+    } 
 }
 
 

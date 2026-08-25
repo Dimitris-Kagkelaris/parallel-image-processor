@@ -12,7 +12,7 @@
 struct worker{
     int pid;
     int in;
-    int out;
+    int out; 
     int current_job;
     int jobs_completed;
     bool busy; // 0 means available 1 means busy

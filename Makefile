@@ -3,7 +3,7 @@ CFLAGS = -Wall -Wextra -I$(INC_DIR)
 
 SRC_DIR = src
 INC_DIR = include
-OBJ_DIR = obj
+OBJ_DIR = obj 
 BIN_DIR = bin
 IMG_DIR = images
 

@@ -244,7 +244,7 @@ int main(int argc, char* argv[]){
 
     // set up signal communication with dispatcher
     struct sigaction sa;
-    sigset_t sigset;
+    sigset_t sigset; 
     sigemptyset(&sigset);
     sigaddset(&sigset, SIGCHLD);
     sa.sa_handler = exit_handler;

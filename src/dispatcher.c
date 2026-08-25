@@ -165,7 +165,7 @@ int main(int argc, char* argv[]){
     // read input file
     if(read_image_header(argv[1], &input_specs) != 0){
         fprintf(stderr, "[Dispatcher]: Problem with input image");
-        exit(1);
+        exit(1); 
     }
     input_file = open(argv[1], O_RDONLY);
     if (input_file == -1){

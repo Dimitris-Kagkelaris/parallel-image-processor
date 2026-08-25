@@ -19,7 +19,7 @@ Work is distributed across three types of processes:
 * **Worker** — receives job IDs from the dispatcher, uses `pread()` to read the assigned region of the input image, processes the pixels, and uses `pwrite()` to write the result to the corresponding region of the output image.
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="architecture" width="120%">
+  <img src="docs/architecture.svg" alt="architecture" width="100%">
 </p>
 
 ## Features
@@ -33,8 +33,6 @@ Work is distributed across three types of processes:
 * **Automatic worker recovery** — detects crashed workers, returns unfinished jobs to the pending-job stack, and spawns replacement workers.
 
 * **Extensible parallel image processing** — currently demonstrates RGB-to-grayscale conversion, with a modular architecture designed to support additional image transformations.
-
-* **P6 PPM input support** — currently supports 8-bit P6 PPM images and produces grayscale PGM output.
 
 <table>
   <tr>
@@ -51,6 +49,12 @@ Work is distributed across three types of processes:
   </tr>
 </table>
 
+## Requirements
+
+- Linux
+- GCC
+- GNU Make
+- `rlwrap` (optional)
 
 ## Builds
 
@@ -66,13 +70,13 @@ All builds use GCC with the `-Wall` and `-Wextra` warning flags.
 
 ## Run
 
-Place the input image in the `./images/` directory before running the application.
+Place the `.ppm` input image in the `./images/` directory before running the application.
 
 * **`make run IN=image.ppm OUT=processed.pgm`** — runs the application using the specified input and output filenames. The output file is created if it does not already exist. `IN` defaults to `input.ppm` and `OUT` defaults to `output.pgm`. Diagnostic output from `stderr` is redirected to `logs.txt`.
 
 * **`make run-rlwrap IN=image.ppm OUT=processed.pgm`** — runs the application through `rlwrap`, providing command history and improved line editing for the REPL. `rlwrap` must be installed separately.
 
-## How to use
+## How to Use
 
 Once the application is running, the frontend provides an interactive command interface for controlling the worker pool and monitoring processing.
 
@@ -131,4 +135,4 @@ Once the application is running, the frontend provides an interactive command in
 ## Author
 
 **Dimitrios Kagkelaris**<br>
-GitHub: ([Dimitris-Kagkelaris](https://github.com/Dimitris-Kagkelaris))
+GitHub: [Dimitris-Kagkelaris](https://github.com/Dimitris-Kagkelaris)

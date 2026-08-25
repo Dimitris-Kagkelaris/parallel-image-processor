@@ -18,7 +18,7 @@ void free_stack(struct stack *s){
 
 
 int get_size(struct stack *s){
-    return s->top;
+    return s->top; 
 }
 
 int get_top(struct stack *s){
