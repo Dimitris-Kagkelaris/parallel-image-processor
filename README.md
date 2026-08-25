@@ -108,16 +108,25 @@ Once the application is running, the frontend provides an interactive command in
 
 ## Limitations
 
-1. Job granularity
-2. pread + pwrite have syscall overhead, better switch to mmap
-3. poll the pipes with the dispatcher instead of spinning
-4. Right now only Grayscale, soon there will be more
-5. Only PPM format, no compressed formats (if we switch to mmap it might support them too, who knows?)
-6. Limited to MAX_WORKERS = 500, because of fd soft limit to 1024 but nevertheless no point having many workers than cores in the computer, as proven in earlier benchmarking
+* **Job Granularity** — Jobs currently contain a fixed maximum of 1024 pixels. The packet size can be overridden at compile time using `-DPACKET_SIZE=<value>`. The optimal job size depends on the workload and should ultimately be determined through benchmarking.
 
-## Future work
+* **File I/O** — Workers access image data using the `pread()` and `pwrite()` system calls. This introduces syscall overhead for each chunk of work. Mapping the input and output files with `mmap()` may reduce this overhead, but the two approaches need to be benchmarked before drawing conclusions.
 
-what?
+* **Busy-Waiting Dispatcher** — While workers are busy, the dispatcher repeatedly checks their non-blocking acknowledgement pipes, causing it to consume CPU even when there is no work for it to perform. A future implementation could use `poll()` or `ppoll()` to block until either a worker acknowledgement or frontend command becomes available.
+
+* **Fixed Worker Limit** — The worker pool is currently capped at 500 processes to avoid approaching system resource limits such as process and file-descriptor limits. The appropriate maximum may vary depending on the host system.
+
+
+## Future Work
+
+* **Additional Image Transformations** — Grayscale conversion currently serves as the reference workload. Possible future transformations include:
+
+  * Image mirroring and rotation.
+  * Convolution-based filters such as blur, sharpening, and edge detection.
+  * Brightness and contrast adjustment.
+  * Color inversion.
+
+* **Additional Image Formats** — The application currently accepts 8-bit P6 PPM input and produces P5 PGM output. Support for additional image formats may be added in future versions.
 
 # Author/Contact
 
