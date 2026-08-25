@@ -108,11 +108,11 @@ Once the application is running, the frontend provides an interactive command in
 
 ## Limitations
 
+* **Busy-Waiting Dispatcher** — While workers are busy, the dispatcher repeatedly checks their non-blocking acknowledgement pipes, causing it to consume CPU even when there is no work for it to perform. A future implementation could use `poll()` or `ppoll()` to block until either a worker acknowledgement or frontend command becomes available.
+
 * **Job Granularity** — Jobs currently contain a fixed maximum of 1024 pixels. The packet size can be overridden at compile time using `-DPACKET_SIZE=<value>`. The optimal job size depends on the workload and should ultimately be determined through benchmarking.
 
 * **File I/O** — Workers access image data using the `pread()` and `pwrite()` system calls. This introduces syscall overhead for each chunk of work. Mapping the input and output files with `mmap()` may reduce this overhead, but the two approaches need to be benchmarked before drawing conclusions.
-
-* **Busy-Waiting Dispatcher** — While workers are busy, the dispatcher repeatedly checks their non-blocking acknowledgement pipes, causing it to consume CPU even when there is no work for it to perform. A future implementation could use `poll()` or `ppoll()` to block until either a worker acknowledgement or frontend command becomes available.
 
 * **Fixed Worker Limit** — The worker pool is currently capped at 500 processes to avoid approaching system resource limits such as process and file-descriptor limits. The appropriate maximum may vary depending on the host system.
 
@@ -128,9 +128,7 @@ Once the application is running, the frontend provides an interactive command in
 
 * **Additional Image Formats** — The application currently accepts 8-bit P6 PPM input and produces P5 PGM output. Support for additional image formats may be added in future versions.
 
-# Author/Contact
+## Author
 
-dimlaris the king
-
-
-add an MIT license lol...
+**Dimitris Kagkelaris**
+GitHub: [Dimitris-Kagkelaris]([https://github.com/Dimitris-Kagkelaris])
