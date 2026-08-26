@@ -22,12 +22,6 @@ void *safe_malloc(size_t size){
     return ptr;
 }
 
-// string helper functions
-void flush_input_buffer(void){
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF);
-}
-
 // image helper functions
 // reads a P6 PPM header
 int read_image_header(const char* image_name, struct image_specs *specs){

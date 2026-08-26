@@ -29,6 +29,5 @@ int min(int x, int y);
 int max(int x, int y);
 void *safe_malloc(size_t size);
 
-void flush_input_buffer(void);
 int read_image_header(const char* image_name, struct image_specs *specs);
 #endif
