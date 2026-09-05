@@ -42,7 +42,7 @@ int main(int argc, char* argv[]){
         }
         off_t read_byte_offset = input_specs.header_size + (off_t)job_id * PACKET_SIZE * STRIDE;
         ssize_t read_size = PACKET_SIZE * STRIDE;
-        LOG("[Worker (%d)]: I will search editing from %ld byte offset in the input file.\n", getpid(), read_byte_offset);
+        LOG("[Worker (%d)]: I will search editing from %lld byte offset in the input file.\n", getpid(), read_byte_offset);
 
         // read from file
         unsigned char buff[PACKET_SIZE * STRIDE];

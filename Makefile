@@ -1,4 +1,4 @@
-CC = gcc
+CC ?= gcc
 CFLAGS = -Wall -Wextra -I$(INC_DIR)
 
 SRC_DIR = src
@@ -17,7 +17,7 @@ all: $(BINARIES)
 release: CFLAGS += -O2
 release: all
 
-debug: CFLAGS += -g -O0 -DDEBUG
+debug: CFLAGS += -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer -DDEBUG
 debug: all
 
 sleep-debug: CFLAGS += -DSLEEP
