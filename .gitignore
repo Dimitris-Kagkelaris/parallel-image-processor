@@ -4,7 +4,6 @@ obj/
 helper/
 /images/*
 !/images/input.ppm
-!/images/output.pgm 
 todo.txt
 benchmark.py
 benchmark_raw.csv
