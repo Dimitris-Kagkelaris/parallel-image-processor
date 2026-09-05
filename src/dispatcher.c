@@ -5,7 +5,6 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <string.h>
-#include <sys/prctl.h>
 #include <signal.h>
 #include <sys/stat.h>
 #include <libgen.h>
@@ -13,6 +12,10 @@
 #include "util.h"
 #include "stack.h"
 #include "pipe_utils.h"
+
+#ifdef __linux__
+#include <sys/prctl.h>
+#endif
 
 #ifdef DEBUG
 #define LOG(...) fprintf(stderr, __VA_ARGS__)

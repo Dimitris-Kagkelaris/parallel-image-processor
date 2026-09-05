@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <sys/prctl.h>
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -11,6 +10,10 @@
 #include <string.h>
 #include "util.h"
 #include "pipe_utils.h"
+
+#ifdef __linux__
+#include <sys/prctl.h>
+#endif
 
 struct command{
     const char* name;
