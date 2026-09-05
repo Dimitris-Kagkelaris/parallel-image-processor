@@ -1,6 +1,6 @@
 # Parallel Image Processor
 
-A worker-pool-based system for parallel image transformations in C, using `fork()`/`execv()`, Unix pipes and signals for interprocess coordination.
+A worker-pool-based system for parallel image transformations in C on Unix-like systems, using `fork()`/`execv()`, POSIX pipes and signals for interprocess coordination.
 
 <p align="center">
   <img src="docs/interface_screenshot.png"
@@ -51,18 +51,18 @@ Work is distributed across three types of processes:
 
 ## Requirements
 
-- Linux
-- GCC
+- A Unix-like operating system with POSIX APIs (such as Linux or macOS)
+- GCC or Clang (debug builds also require AddressSanitizer and UndefinedBehaviorSanitizer support)
 - GNU Make
 - `rlwrap` (optional)
 
 ## Builds
 
-All builds use GCC with the `-Wall` and `-Wextra` warning flags.
+All builds use the `-Wall` and `-Wextra` warning flags. The compiler can be selected with `CC`, for example `make release CC=clang` or `make release CC=gcc`.
 
-* **`make release`** — builds optimized binaries using GCC's `-O2` optimization level.
+* **`make release`** — builds optimized binaries using the `-O2` optimization level.
 
-* **`make debug`** — builds with `-O0` and `-g`, and enables additional debug logging to `stderr`.
+* **`make debug`** — builds with `-O1` and `-g`, enables AddressSanitizer and UndefinedBehaviorSanitizer with `-fsanitize=address,undefined`, preserves frame pointers with `-fno-omit-frame-pointer`, and enables additional debug logging to `stderr`.
 
 * **`make sleep-debug`** — same as `make debug`, but adds a `sleep(1)` after each completed worker job, making it easier to interact with the frontend while processing is underway.
 
@@ -106,13 +106,15 @@ Once the application is running, the frontend provides an interactive command in
 
 * **Frontend–Dispatcher Command IPC** — The frontend communicates with the dispatcher through two pipes and `SIGUSR1`. When the frontend receives a command, it parses and validates it, then sends the corresponding command ID and any required arguments through the command pipe. It then sends `SIGUSR1` to notify the dispatcher that a command is available and waits for the appropriate response. The dispatcher handles the signal by setting a flag, processes the pending command before continuing its worker loop, and sends any requested response back to the frontend through the response pipe.
 
-* **Process Creation and Parent-Death Handling** — Processes are created using `fork()` followed by `execv()`: the frontend creates the dispatcher, and the dispatcher creates worker processes. Each child configures `prctl(PR_SET_PDEATHSIG, SIGTERM)` so that it receives `SIGTERM` if its parent process dies. This creates a parent-child lifetime chain from the frontend to the dispatcher and from the dispatcher to the workers.
+* **Process Creation and Parent-Death Handling** — Processes are created using `fork()` followed by `execv()`: the frontend creates the dispatcher, and the dispatcher creates worker processes. On Linux, each child additionally configures `prctl(PR_SET_PDEATHSIG, SIGTERM)` so that it receives `SIGTERM` if its parent process dies. This Linux-specific safeguard is compiled only when `__linux__` is defined; other Unix-like systems use the explicit shutdown handling described below.
 
-* **Application Shutdown** — If the user exits through the frontend, terminating the frontend causes the dispatcher to receive `SIGTERM`, which in turn causes its workers to terminate. When all jobs are completed normally, the dispatcher exits successfully; the frontend receives `SIGCHLD`, checks the dispatcher's exit status, and then exits as well.
+* **Application Shutdown** — When the user enters `exit` or standard input reaches EOF, the frontend sends `SIGTERM` to the dispatcher and waits for it with `waitpid()`. The dispatcher handles `SIGTERM` by terminating and reaping its workers before exiting. This explicit cleanup works across Unix-like systems. When all jobs are completed normally, the dispatcher cleans up its workers and exits successfully; the frontend receives `SIGCHLD`, checks the dispatcher's exit status, and then exits as well.
 
 ## Limitations
 
-* **Busy-Waiting Dispatcher** — While workers are busy, the dispatcher repeatedly checks their non-blocking acknowledgement pipes, causing it to consume CPU even when there is no work for it to perform. A future implementation could use `poll()` or `ppoll()` to block until either a worker acknowledgement or frontend command becomes available.
+* **Unexpected Parent Termination** — Automatic parent-death signals are available only on Linux. On other Unix-like systems, abrupt termination that bypasses explicit cleanup (such as killing the frontend with `SIGKILL`) can leave child processes running.
+
+* **Busy-Waiting Dispatcher** — While workers are busy, the dispatcher repeatedly checks their non-blocking acknowledgement pipes, causing it to consume CPU even when there is no work for it to perform. A future implementation could use POSIX `poll()` or `pselect()` to block until either a worker acknowledgement or frontend command becomes available.
 
 * **Job Granularity** — Jobs currently contain a fixed maximum of 1024 pixels. The packet size can be overridden at compile time using `-DPACKET_SIZE=<value>`. The optimal job size depends on the workload and should ultimately be determined through benchmarking.
 
