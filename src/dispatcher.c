@@ -9,6 +9,7 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <libgen.h>
+#include <errno.h>
 #include "util.h"
 #include "stack.h"
 #include "pipe_utils.h"
@@ -19,7 +20,7 @@
 #define LOG(...) ((void)0)
 #endif
 
-int workers_count;
+int workers_count = 0;
 struct worker workers[MAX_WORKERS];
 
 int input_file;
@@ -34,6 +35,35 @@ pid_t dispatcher_pid;
 char *dispatcher_dirname;
 int dispatcher_in, dispatcher_out;
 volatile sig_atomic_t command_arrived = 0; // flag to indicate that a command has arrived from frontend
+volatile sig_atomic_t terminate = 0;
+
+void cleanup_and_exit(int code){
+    int failures = 0;
+    int status;
+    for(int i = 0; i < workers_count; ++i){
+        if(workers[i].pid <= 0) continue;
+        kill(workers[i].pid, SIGTERM);
+    }
+    for(int i = 0; i < workers_count; ++i){
+        if(workers[i].pid <= 0) continue;
+        status = 0;
+        while (waitpid(workers[i].pid, &status, 0) == -1) {
+            if (errno != EINTR)
+                break;
+        }
+        if (!(WIFEXITED(status) && WEXITSTATUS(status) == 0) &&
+            !(WIFSIGNALED(status) && WTERMSIG(status) == SIGTERM)) {
+            ++failures;
+            LOG("[Dispatcher]: Worker with pid %d exited with status %d\n", workers[i].pid, status);
+        }
+    }
+    LOG("[Dispatcher]: Exited with %d failures.", failures);
+    if(failures > 0){
+        exit(1);
+    }
+
+    exit(code);
+}
 
 void worker_init(int pos){
     int fd[2];
@@ -58,14 +88,16 @@ void worker_init(int pos){
     pid_t p = fork();
     if(p<0){
         perror("fork");
-        exit(1);
+        cleanup_and_exit(1);
     }
     else if(p == 0){
+        #ifdef __linux__
         // kill worker if dispatcher dies
         prctl(PR_SET_PDEATHSIG, SIGTERM);
         if (getppid() != dispatcher_pid) {
             exit(1);
         }
+        #endif
         
         char arg0[100];
         snprintf(arg0, sizeof(arg0), "%s/worker", dispatcher_dirname);
@@ -117,6 +149,7 @@ void remove_workers(int num){
         close(workers[j].out);
         kill(kill_id, SIGTERM);
         waitpid(kill_id, NULL, 0);
+        workers[j].pid = -1;
     }
     workers_count = max(0, workers_count - num);
 }
@@ -134,13 +167,26 @@ void show_progress(void){
     send_over_pipe(dispatcher_in, jobs_count_done);
 }
 
-void signal_handler(int signum){
+void command_arrival_handler(int signum){
     (void)signum;
     command_arrived = 1;
 }
 
+void termination_handler(int signum){// frontend exited, terminate dispatcher and workers
+    (void)signum;
+    if(getpid() != dispatcher_pid){
+        _exit(0);
+    }
+    terminate = 1;
+}
+
 int main(int argc, char* argv[]){
     (void)argc;
+
+    for(int i = 0; i < MAX_WORKERS; ++i){
+        workers[i].pid = -1;
+    }
+
     dispatcher_pid = getpid();
     
     dispatcher_dirname = dirname(argv[0]);
@@ -154,18 +200,28 @@ int main(int argc, char* argv[]){
     sigset_t sigset;
     sigemptyset(&sigset);
     sigaddset(&sigset, SIGUSR1);
-    sa.sa_handler = signal_handler;
+    sa.sa_handler = command_arrival_handler;
     sa.sa_flags = SA_RESTART;
     sa.sa_mask = sigset;
     if (sigaction(SIGUSR1, &sa, NULL) < 0) {
         perror("sigaction (can't pair signal and handler)");
         exit(1);
     }
+
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGTERM);
+    sa.sa_handler = termination_handler;
+    sa.sa_mask = sigset;
+    if (sigaction(SIGTERM, &sa, NULL) < 0) {
+        perror("sigaction (can't pair signal and handler)");
+        exit(1);
+    }
+
     
     // read input file
     if(read_image_header(argv[1], &input_specs) != 0){
         fprintf(stderr, "[Dispatcher]: Problem with input image");
-        exit(1); 
+        exit(1);
     }
     input_file = open(argv[1], O_RDONLY);
     if (input_file == -1){
@@ -230,9 +286,13 @@ int main(int argc, char* argv[]){
     }
 
     while(1){
+        if(terminate){
+            LOG("[Dispatcher]: Frontend exited. Exiting.\n");
+            cleanup_and_exit(0);
+        }
         if(jobs_count_done == number_of_jobs){
             LOG("[Dispatcher]: All jobs done. Exiting.\n");
-            exit(0);
+            cleanup_and_exit(0);
         }
         while(command_arrived){
             command_arrived = 0;
@@ -286,7 +346,7 @@ int main(int argc, char* argv[]){
             else if(bytes_read > 0){
                 if(result != 0){
                     fprintf(stderr, "[Dispatcher]: Worker %d encountered an error while processing job %d\n", i, workers[i].current_job);
-                    exit(1);
+                    cleanup_and_exit(1);
                 }
                 ++jobs_count_done;
                 workers[i].busy = 0;

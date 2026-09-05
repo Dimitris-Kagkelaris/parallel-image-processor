@@ -48,11 +48,37 @@ const struct command commands[] = {
 const int num_commands = sizeof(commands) / sizeof(struct command);
 
 pid_t frontend_pid;
-pid_t dispatcher_pid;
+pid_t dispatcher_pid = -1;
 int frontend_in;
 int frontend_out;
 int worker_amount = 0;
 int total_number_of_jobs = 0;
+
+void cleanup_and_exit(int code){
+    int status = 0;
+    if(dispatcher_pid > 0){
+        // unpair death of dispatcher handler
+        struct sigaction sa = {0};
+        sa.sa_handler = SIG_DFL;
+        sigemptyset(&sa.sa_mask);
+        if (sigaction(SIGCHLD, &sa, NULL) < 0) {
+            perror("sigaction (can't pair signal and handler)");
+            exit(1);
+        }
+
+        kill(dispatcher_pid, SIGTERM);
+        while (waitpid(dispatcher_pid, &status, 0) == -1) {
+            if (errno != EINTR)
+                break;
+        }
+        if (!(WIFEXITED(status) && WEXITSTATUS(status) == 0) &&
+            !(WIFSIGNALED(status) && WTERMSIG(status) == SIGTERM)) {
+            fprintf(stderr, "[Frontend]: Dispatcher exited with status %d\n", status);
+            exit(1);
+        }
+    }
+    exit(code);
+}
 
 bool validate_number_of_workers(char *number, int *number_of_workers){
     if(number == NULL){
@@ -102,7 +128,7 @@ void add_workers(void *arg){
     }
     if(message != 0){
         printf("Error encountered during adding workers\n");
-        exit(1);
+        cleanup_and_exit(1);
     }
     worker_amount += number;
     printf("Added %d workers!\n", number);
@@ -135,7 +161,7 @@ void remove_workers(void *arg){
     }
     if(message != 0){
         printf("Error encountered during removing workers\n");
-        exit(1);
+        cleanup_and_exit(1);
     }
     worker_amount -= number;
     printf("Removed %d workers!\n", number);
@@ -211,7 +237,7 @@ void clear_screen(void *arg){
 void exit_application(void *arg){
     (void)arg;
     printf("Exiting...\n");
-    exit(0);
+    cleanup_and_exit(0);
 }
 
 void exit_handler(int signum){
@@ -275,11 +301,13 @@ int main(int argc, char* argv[]){
         exit(1);
     }
     else if(p == 0){
+        #ifdef __linux__
         // kill dispatcher if frontend dies
         prctl(PR_SET_PDEATHSIG, SIGTERM);
         if (getppid() != frontend_pid) {
             exit(1);
         }
+        #endif
 
         // dispatcher closes frontend ends
         close(frontend_in);
