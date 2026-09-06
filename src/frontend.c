@@ -354,7 +354,19 @@ int main(int argc, char* argv[]){
         
         if(getline(&line, &buffer_len, stdin) == -1){
             putchar('\n');
-            exit_application(NULL);
+            if (ferror(stdin)){
+                perror("getline");
+                cleanup_and_exit(1);
+            }
+            if(worker_amount > 0){
+                while(1){
+                    pause();
+                }
+            }
+            else{
+                printf("No workers available, exiting...\n");
+                cleanup_and_exit(1);
+            }
         }
         char *cmd = strtok(line, " \t\n");
         char *cmd_args = strtok(NULL, " \t\n");

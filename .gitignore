@@ -1,3 +1,4 @@
+.vscode/
 logs.txt
 bin/
 obj/
@@ -6,5 +7,6 @@ helper/
 !/images/input.ppm
 todo.txt
 benchmark.py
+b.py
 benchmark_raw.csv
 benchmark_summary.csv

@@ -1,4 +1,4 @@
-CC ?= gcc
+CC = gcc
 CFLAGS = -Wall -Wextra -I$(INC_DIR)
 
 SRC_DIR = src
