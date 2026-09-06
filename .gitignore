@@ -2,11 +2,9 @@
 logs.txt
 bin/
 obj/
-helper/
 /images/*
 !/images/input.ppm
 todo.txt
 benchmark.py
 b.py
-benchmark_raw.csv
-benchmark_summary.csv
+sequential_processor.c
