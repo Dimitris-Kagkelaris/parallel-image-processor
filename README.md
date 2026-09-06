@@ -108,7 +108,7 @@ Once the application is running, the frontend provides an interactive command in
 
 * **Process Creation and Parent-Death Handling** — Processes are created using `fork()` followed by `execv()`: the frontend creates the dispatcher, and the dispatcher creates worker processes. On Linux, each child additionally configures `prctl(PR_SET_PDEATHSIG, SIGTERM)` so that it receives `SIGTERM` if its parent process dies. This Linux-specific safeguard is compiled only when `__linux__` is defined; other Unix-like systems use the explicit shutdown handling described below.
 
-* **Application Shutdown** — When the user enters `exit` or standard input reaches EOF, the frontend sends `SIGTERM` to the dispatcher and waits for it with `waitpid()`. The dispatcher handles `SIGTERM` by terminating and reaping its workers before exiting. This explicit cleanup works across Unix-like systems. When all jobs are completed normally, the dispatcher cleans up its workers and exits successfully; the frontend receives `SIGCHLD`, checks the dispatcher's exit status, and then exits as well.
+* **Application Shutdown** — When the user enters `exit`, the frontend sends `SIGTERM` to the dispatcher and waits for it with `waitpid()`. The dispatcher handles `SIGTERM` by terminating and reaping its workers before exiting. This explicit cleanup works across Unix-like systems. When all jobs are completed normally, the dispatcher cleans up its workers and exits successfully; the frontend receives `SIGCHLD`, checks the dispatcher's exit status, and then exits as well.
 
 ## Limitations
 
@@ -121,6 +121,8 @@ Once the application is running, the frontend provides an interactive command in
 * **File I/O** — Workers access image data using the `pread()` and `pwrite()` system calls. This introduces syscall overhead for each chunk of work. Mapping the input and output files with `mmap()` may reduce this overhead, but the two approaches need to be benchmarked before drawing conclusions.
 
 * **Fixed Worker Limit** — The worker pool is currently capped at 500 processes to avoid approaching system resource limits such as process and file-descriptor limits. The appropriate maximum may vary depending on the host system.
+
+* **Performance** — In local testing, an optimized sequential implementation outperformed the worker-pool implementation for RGB-to-grayscale conversion. Adding workers improved performance relative to the single-worker configuration, but did not beat the sequential baseline. This suggests that coordination and I/O overhead are significant relative to the small amount of computation per pixel. The project demonstrates process coordination, dynamic worker management, and failure recovery; larger job sizes and more computationally intensive transformations remain areas for future evaluation.
 
 
 ## Future Work
